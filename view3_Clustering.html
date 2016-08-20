@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Clustering</title>
+		<script type="text/javascript" src="resource/js/jquery-3.1.0.min.js"></script>
+		<script type="text/javascript" src="resource/js/phaser.min.js"></script>
+	</head>
+	
+	<body>
+		<div id="viewport"></div>
+	</body>
+	
+	<script>
+		function createRandomArray(num_of_vehicles, bound_x, bound_y, bound_vel) {
+			var arr_of_vehicles = []
+			
+			for(i = 0; i < num_of_vehicles; i ++) {
+				var vehicle = {};
+				vehicle.x = Math.floor(Math.random() * bound_x);
+				vehicle.y = Math.floor(Math.random() * bound_y);
+				
+				vehicle.vel = Math.floor(Math.random() * bound_vel);
+				
+				arr_of_vehicles[i] = vehicle;
+			}
+			
+			return arr_of_vehicles;
+		}
+	</script>
+	
+	<script>
+		var screen_width = 500;
+		var screen_height = 500;
+		var arr_of_vehicles = [];
+		var bodies;
+		
+		var game = new Phaser.Game(screen_width, screen_height, Phaser.Auto, 'viewport', {
+				preload: preload,
+				create: create,
+				update: update
+		});
+		
+		function preload() {
+			var assetFolderDir = 'resource/assets/';
+			game.load.image('star', assetFolderDir + 'star.png');
+		}
+		
+		function create() {
+			game.physics.startSystem(Phaser.Physics.P2JS);
+			
+			bodies = game.add.group();
+			
+			for(var i = 0; i < 10; i ++) {
+				var vehicle = {};
+				
+				var body = bodies.create(
+					game.rnd.integerInRange(50, screen_width - 50),
+					game.rnd.integerInRange(50, screen_width - 50),
+					'star'
+				);
+				game.physics.p2.enable(body, false);
+				vehicle.body = body;
+				
+				vehicle.velocity = game.rnd.integerInRange(0, 100);
+				vehicle.cluster = -1;
+				
+				arr_of_vehicles[i] = vehicle;
+			}
+		}
+		
+		function update() {
+			bodies.forEach(function(child){
+				child.angle += 1;
+			}, this);
+		}
+	</script>
+</html>
