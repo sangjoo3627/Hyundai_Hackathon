@@ -59,7 +59,7 @@
             */
             this.load.image('tiles', 'assets/tiles.png');
             this.load.image('car', 'assets/car.png');
-
+            //this.load.image('car', 'assets/car.png');
             //  Note: Graphics are Copyright 2015 Photon Storm Ltd.
 
         },
@@ -267,6 +267,11 @@
                 {
                     color = 'rgba(255,255,255,0.3)';
                     /*gray color.*/
+                    /*회피가능범위 Detection*/
+                    if(this.directions[t].index !== this.safetile) {
+                        window.alert("Warning! Detection something");
+                        return;
+                    }
                 }
 
                 /*
