@@ -12,6 +12,8 @@
     <script type="text/javascript">
 
     var game = new Phaser.Game(800, 600, Phaser.CANVAS, 'game');
+    /*test를 위해 알림 횟수를 지정하려 함.(오전 8시 41분 현재 실패)*/
+    var flag_alert_cnt = 0;
 
     var PhaserGame = function (game) {
 
@@ -153,7 +155,9 @@
             this.move(this.turning);
 
             this.turning = Phaser.NONE;
-
+            /*방향이 바뀔 때 마다 초기화를 하려 하나 실패.*/
+            var flag_alert_cnt = 0;
+            
             return true;
 
         },
@@ -269,6 +273,12 @@
                     /*gray color.*/
                     /*회피가능범위 Detection*/
                     if(this.directions[t].index !== this.safetile) {
+                        //일정횟수이상 알람이 울리면 일단 계속 진행하기위해 알림을 멈추려 하나 실패.
+                        flag_alert_cnt++;
+                        if(flag_alert_cnt === 3){
+                            break;
+                        }
+                        
                         window.alert("Warning! Detection something");
                         return;
                     }
