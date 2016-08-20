@@ -213,6 +213,7 @@
 
             //  Update our grid sensors
             this.directions[1] = this.map.getTileLeft(this.layer.index, this.marker.x, this.marker.y);
+            //감지해서 알림을 주는 부분은 여기임. 근데 배가 아파서 자고 일어나서 다시 하겠음.
             this.directions[2] = this.map.getTileRight(this.layer.index, this.marker.x, this.marker.y);
             this.directions[3] = this.map.getTileAbove(this.layer.index, this.marker.x, this.marker.y);
             this.directions[4] = this.map.getTileBelow(this.layer.index, this.marker.x, this.marker.y);
@@ -270,8 +271,16 @@
 
                 /*
                     반복문을 4번 돌면서 방향에 맞는 색깔을 방향마다 칠해주는 것이다.
+                    이 때, 위에서 상하방향 인지, 좌우방향인지 나눠서 진행에 해당하는 차량의 앞뒤방향만 색칠했으며,
+                    방향마다 범위를 늘려주었다.
                 */
-                this.game.debug.geom(new Phaser.Rectangle(this.directions[t].worldX, this.directions[t].worldY, 32, 32), color, true);
+                if((this.current === 1) || (this.current === 2)){
+                    this.game.debug.geom(new Phaser.Rectangle(this.directions[t].worldX, this.directions[t].worldY, 96, 32), color, true);
+                }
+                else {
+                    this.game.debug.geom(new Phaser.Rectangle(this.directions[t].worldX, this.directions[t].worldY, 32, 96), color, true);
+
+                }
             }
 
             this.game.debug.geom(this.turnPoint, '#ffff00');
