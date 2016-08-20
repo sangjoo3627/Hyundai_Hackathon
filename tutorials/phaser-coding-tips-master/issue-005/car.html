@@ -234,11 +234,25 @@
 
             for (var t = 1; t < 5; t++)
             {
+                /*Direction-Check part.*/
+                /*가는 방향에 따라 앞 뒤로 범위가 생성되게 하고자 하는 의도임.*/
+                /*움직이는 방향이 좌/우 일 경우, 차량의 좌 우에만 범위가 표시되게 한다.*/
+                if((this.current === 1) || (this.current === 2)){
+                    if(t >= 3){
+                        break;
+                    }
+                }
+                /*움직이는 방향이 상/하 일 경우, 차량의 상 하에만 범위가 표시되게 한다.*/
+                if((this.current === 3) || (this.current === 4)){
+                    if(t < 3){
+                        continue;
+                    }
+                }
+
                 if (this.directions[t] === null)
                 {
                     continue;
                 }
-
                 var color = 'rgba(0,255,0,0.3)';
                 /*green color.*/
 
