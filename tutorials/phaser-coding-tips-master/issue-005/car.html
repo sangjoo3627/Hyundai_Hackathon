@@ -230,6 +230,8 @@
 
             //  Un-comment this to see the debug drawing
 
+            /*한칸 움직일때마다 4방향을 체크해서, 거동이 가능한 곳은 초록색, 불가능한 곳은 빨간색, 현재 가고있는 방향은 회색으로 표시.*/
+
             for (var t = 1; t < 5; t++)
             {
                 if (this.directions[t] === null)
@@ -238,17 +240,23 @@
                 }
 
                 var color = 'rgba(0,255,0,0.3)';
+                /*green color.*/
 
                 if (this.directions[t].index !== this.safetile)
                 {
                     color = 'rgba(255,0,0,0.3)';
+                    /*red color*/
                 }
 
                 if (t === this.current)
                 {
                     color = 'rgba(255,255,255,0.3)';
+                    /*gray color.*/
                 }
 
+                /*
+                    반복문을 4번 돌면서 방향에 맞는 색깔을 방향마다 칠해주는 것이다.
+                */
                 this.game.debug.geom(new Phaser.Rectangle(this.directions[t].worldX, this.directions[t].worldY, 32, 32), color, true);
             }
 
