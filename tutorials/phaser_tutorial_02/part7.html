@@ -90,6 +90,7 @@ function update() {
     if (cursors.left.isDown)
     {
         //  Move to the left
+        // set velocity and direction.(body.velocity <- number, animation.play('direction'))
         player.body.velocity.x = -150;
 
         player.animations.play('left');
