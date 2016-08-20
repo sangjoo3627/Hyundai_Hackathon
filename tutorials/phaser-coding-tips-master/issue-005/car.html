@@ -11,7 +11,7 @@
 
     <script type="text/javascript">
 
-    var game = new Phaser.Game(640, 480, Phaser.CANVAS, 'game');
+    var game = new Phaser.Game(800, 600, Phaser.CANVAS, 'game');
 
     var PhaserGame = function (game) {
 
@@ -22,7 +22,7 @@
         this.safetile = 1;
         this.gridsize = 32;
 
-        this.speed = 150;
+        this.speed = 100;
         this.threshold = 3;
         this.turnSpeed = 150;
 
@@ -53,6 +53,10 @@
             this.load.crossOrigin = 'anonymous';
 
             this.load.tilemap('map', 'assets/maze.json', null, Phaser.Tilemap.TILED_JSON);
+            /*
+                Song's Comment.
+                -> If we want to make map into road, we should modify maze.json to simulate our situation.
+            */
             this.load.image('tiles', 'assets/tiles.png');
             this.load.image('car', 'assets/car.png');
 
@@ -201,7 +205,9 @@
         update: function () {
           
             this.physics.arcade.collide(this.car, this.layer);
-
+            /*
+                여기가 감지범위를 표현하는 곳임.
+            */
             this.marker.x = this.math.snapToFloor(Math.floor(this.car.x), this.gridsize) / this.gridsize;
             this.marker.y = this.math.snapToFloor(Math.floor(this.car.y), this.gridsize) / this.gridsize;
 
