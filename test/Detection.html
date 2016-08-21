@@ -311,23 +311,47 @@
 			}
 		}
 	</script>
-	
+
 	<script>
 		function detection1 () {
 			clusteringNode.cluster();
 			var clusterList1;
 			clusterList1 = clusteringNode.getClusterList();
 			
-			var count_clusterList = clusterList1.length;
+			var count_clusterList = clusteringNode.getSize();
+			
+			function getDetectDst_Danger(vel){
+				return (Math.atan(-(Math.floor(vel / this._vel_div_ratio))) + (Math.PI / 2)) * this._dist_scale;
+			}
 			
 			for (var i=0; i<count_clusterList-1; i++) {
 				var std_cluster = clusterList1[i];
 				for(var j=i+1; j<count_clusterList; j++) {
 					var other_cluster = clusterList1[j];
 					
-					if(std_cluster.first)
+					// std의 last의 위험가능 범위에 other의 first의 중심이 들어왔을 때
+					// (std <- other attack)
+					var other_center;		// 가해자의 중심
+					var std_center;			// 피해자의 위험가능범위 지점
+					var danger_area = clusterList1[i].last.getDetectDst_Danger(clusterList1[i].last.vel);		// 위험가능범위거리
+					
+					other_center = clusterList1[j].first.sprite;;
+					std_center = clusterList1[i].last.sprite;
+					
+					var test_distance = this._game.physics.arcade.distanceBetween(std_center, other_center);
+					
+					if(test_distance <= danger_area){
+						console.log("Detect!!");
+					}
+					else{
+						console.log("Not Detect!!");
+					}
+					// other의 last의 위험가능 범위에 std의 first의 중심이 들어왔을 때
+					// (std -> other attack)
+					
 				}
 			}
+			
 			
 		}
 	</script>
