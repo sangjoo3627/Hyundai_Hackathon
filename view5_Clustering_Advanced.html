@@ -146,11 +146,11 @@
 
 				if(this._isParallel(src_rot, bet_rot)) {
 					if(this._isParallel(trgt_rot, bet_rot)) {
-						return 'front';
+						return 'rear';
 					}
 				} else if(this._isParallel(src_rot, rev_bet_rot)) {
 					if(this._isParallel(trgt_rot, rev_bet_rot)) {
-						return 'rear';
+						return 'front';
 					}
 				} else {
 					return 'false';
@@ -177,7 +177,7 @@
 		</div>
 	</body>
 	<script>
-		var screen_width = 200;
+		var screen_width = 500;
 		var screen_height = 600;
 		var vehicle_list = [];
 		var sprites;
@@ -210,7 +210,7 @@
 				};
 
 				var sprite = sprites.create(
-					game.rnd.integerInRange(50, screen_width - 50),
+					game.rnd.integerInRange(150, screen_width - 150),
 					game.rnd.integerInRange(50, screen_height - 50),
 					'car'
 				);
@@ -250,7 +250,7 @@
 
 			clusterList = clusteringNode.getClusterList();
 			var colorList = randomColor({
-				hue:'light',
+				luminosity: 'dark',
 				count: clusterList.length
 			});
 
@@ -273,9 +273,17 @@
 					var graphics = game.add.graphics(0, 0);
 					graphics.clear();
 					graphics.lineStyle(1, 0xffffff);
-					graphics.beginFill(colorNum, 0.4);
-					graphics.drawCircle(sprite.x, sprite.y, 50);
+					graphics.beginFill(colorNum, 0.6);
+					graphics.drawCircle(sprite.x, sprite.y, 40);
 					graphics.endFill();
+				}
+
+				if(clusterList[i].first != clusterList[i].last) {
+					var order_text = game.add.text(0, 0, 'First of ' +  i, style);
+					order_text.alignTo(clusterList[i].first.sprite, Phaser.LEFT_BOTTOM, 5);
+
+					order_text = game.add.text(0,0, 'Last of ' + i, style);
+					order_text.alignTo(clusterList[i].last.sprite, Phaser.LEFT_BOTTOM, 5);
 				}
 			}
 		}
