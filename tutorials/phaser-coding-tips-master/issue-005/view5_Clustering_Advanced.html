@@ -277,7 +277,7 @@
 			var loopCnt1, loopCnt2;
 
 			for(loopCnt1=0; loopCnt1<clusterList.getSize(); loopCnt1++){
-				for(loopCnt2=loopCnt1+1; loopCnt<numOfCluster; loopCnt2++){
+				for(loopCnt2=loopCnt1+1; loopCnt<clusterList.getSize(); loopCnt2++){
 					psudo code :
 						if clusterList[loopCnt1].first is overlapped with clusterList[loopCnt2].last
 							-> alert : clusterList[loopCnt1] : 너가 가해자야.
