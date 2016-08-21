@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Detection</title>
+		<script type="text/javascript" src="resource/js/jquery-3.1.0.min.js"></script>
+		<script type="text/javascript" src="resource/js/phaser.min.js"></script>
+		<script type="text/javascript" src="resource/js/randomColor.js"></script>
+		<script>
+		function ClusteringNode(vehicle_list, options) {
+			this._$init.apply(this, arguments);
+		}
+
+		ClusteringNode.prototype = {
+			_$init: function(vehicle_list, options) {
+				/*자동차 개체 리스트*/
+				this._vehicle_list = vehicle_list;
+				/*클러스터 개체 가변배열 리스트*/
+				this._cluster_list = [];
+				this._cluster_num = 0;
+
+				if(options == undefined) {
+					/*Operating Constructors.*/
+					options = {};
+				}				
+				this._game = options.game || new Phaser.Game(0, 0, Phaser.Auto, '', {});
+				/*value of arc-tan*/
+				/*앞의 것이 undefined면 뒤의 10을 넣는다는 의미.*/
+				this._vel_div_ratio = options.vel_div_ratio || 10;
+				this._dist_scale = options.dist_scale || 500;
+
+				/*좌우 15도까지 클러스터로 감지하겠다.*/
+				this._angle_tole = options.angle_tole || (Math.PI / 12);
+			},
+
+			init: function() {
+				vehicle_list = this._vehicle_list;
+
+				/*cluster 집단 -> cluster -> vehicle 리스트.*/
+				for(i in vehicle_list) {
+					vehicle_list[i].cluster == -1;
+				}
+
+				this._cluster_list = [];
+				this._cluster_num = 0;
+
+				return this;
+			},
+
+			getVehicleList: function() {
+				return this._vehicle_list;
+			},
+
+			getClusterList: function() {
+				return this._cluster_list;
+			},
+
+			getSize: function() {
+				return this._cluster_num;
+			},
+
+			cluster: function() {
+				this.init();	
+
+				vehicle_list = this._vehicle_list;
+				cluster_list = this._cluster_list;
+				
+				for(i in vehicle_list) {
+					if(vehicle_list[i].cluster == -1) {
+						cluster_list.push({
+							first: vehicle_list[i],
+							last: vehicle_list[i],
+							vehicle_list: [vehicle_list[i]]
+						});
+						vehicle_list[i].cluster = this._cluster_num;
+						this._repeat(vehicle_list[i]);
+						this._cluster_num += 1;
+					}
+				}
+
+				return this;
+			},
+
+			_repeat: function(vehicle) {
+				/*recursive하게 클러스터를 늘려가는 과정.*/
+				vehicle_list = this._vehicle_list;
+				cluster_num = this._cluster_num;
+				cluster_list = this._cluster_list;
+
+				for(i in vehicle_list) {
+					if(vehicle_list[i] != vehicle && vehicle_list[i].cluster == -1) {
+						var switch_pos = this._satisfy(vehicle_list[i], vehicle)
+
+						if(switch_pos != 'false') {
+							console.log(vehicle.name + ' - ' + vehicle_list[i].name);
+
+							vehicle_list[i].cluster = cluster_num;
+							cluster_list[cluster_num].vehicle_list.push(vehicle_list[i]);
+
+							if(cluster_list[cluster_num].first == vehicle && switch_pos == 'front') {
+								cluster_list[cluster_num].first = vehicle_list[i];
+							}
+
+							if(cluster_list[cluster_num].last == vehicle && switch_pos == 'rear') {
+								cluster_list[cluster_num].last = vehicle_list[i];
+							}
+
+							/*Recursive*/
+							this._repeat(vehicle_list[i]);
+						}
+					}
+				}
+			},
+
+			/*satisfy -> return : false, front, rear
+
+			*/
+			_satisfy: function(src, trgt) {
+				var src_sprite = src.sprite;
+				var trgt_sprite = trgt.sprite;
+
+				// console.log('[SATISFY] ' + src.name + ' - ' + src.trgt);
+
+				var src_dst = this._getDetectDst(src.vel);
+				var trgt_dst = this._getDetectDst(trgt.vel);
+				var bet_dst = this._game.physics.arcade.distanceBetween(src_sprite, trgt_sprite);
+
+				//console.log('dst: ' + src_dst + ' / ' + trgt_dst +' / ' + bet_dst);
+
+				if(src_dst < bet_dst || trgt_dst < bet_dst) {
+					return 'false';
+				}
+
+				var src_rot = src_sprite.rotation;
+				var trgt_rot = trgt_sprite.rotation;
+				var bet_rot = this._game.physics.arcade.angleBetween(src_sprite, trgt_sprite);
+
+				//console.log('rot: ' + src_rot + ' / ' + trgt_rot + ' / ' + bet_rot);
+				var switch_pos = this._isInLine(src_rot, trgt_rot, bet_rot)
+
+				if( switch_pos == 'front') {
+					return 'front';
+				} else if (switch_pos == 'rear') {
+					return 'rear';
+				}else {
+					return 'false';
+				}
+			},
+
+			/*차간 거리를 측정함. arc tan이용.*/
+			_getDetectDst: function(vel) {
+				return (Math.atan(-(Math.floor(vel / this._vel_div_ratio))) + (Math.PI / 2)) * this._dist_scale;
+			},
+
+			_isInLine: function(src_rot, trgt_rot, bet_rot) {
+				if(!this._isParallel(src_rot, trgt_rot)) {
+					return 'false';
+				}
+
+				var rev_bet_rot = this._game.math.reverseAngle(bet_rot);
+
+				if(this._isParallel(src_rot, bet_rot)) {
+					if(this._isParallel(trgt_rot, bet_rot)) {
+						return 'rear';
+					}
+				} else if(this._isParallel(src_rot, rev_bet_rot)) {
+					if(this._isParallel(trgt_rot, rev_bet_rot)) {
+						return 'front';
+					}
+				} else {
+					return 'false';
+				}
+			},
+
+			_isParallel: function(angle1, angle2) {
+				var diff = this._game.math.normalizeAngle(angle1 - angle2);
+
+				if(diff < this._angle_tole || diff > (Math.PI * 2 - this._angle_tole)) {
+					return true;
+				} else {
+					return false;
+				}
+			}
+		};
+	</script>
+	</head>
+
+	<body>
+		<div id="viewport"></div>
+		<div id="setting">
+			<button onclick="processClusteringDriver()">Cluster</button>
+		</div>
+		<div id="detecting">
+			<button onclick="detection1()">Detecting1</button>
+		</div>
+	</body>
+	<script>
+		/*Making More Real Situation.*/
+		var screen_width = 600;
+		var screen_height = 800;
+		var vehicle_list = [];
+		var sprites;
+		
+		var game = new Phaser.Game(screen_width, screen_height, Phaser.Auto, 'viewport', {
+				preload: preload,
+				create: create,
+				update: update
+		});
+		
+		function preload() {
+			var assetFolderDir = 'resource/assets/';
+			game.load.image('star', assetFolderDir + 'star.png');
+			game.load.image('car', assetFolderDir + 'car90.png');
+		}
+		
+		function create() {
+			game.stage.backgroundColor = '#0072bc';
+		
+			game.physics.startSystem(Phaser.Physics.ARCADE);
+			
+			sprites = game.add.group();
+			
+			for(var i = 0; i < 10; i ++) {
+				var vehicle = {};
+				
+				var style = {
+					font: '15px Courier',
+					fill: '#ffffff'
+				};
+
+				var sprite = sprites.create(
+					game.rnd.integerInRange(150, screen_width - 150),
+					game.rnd.integerInRange(50, screen_height - 50),
+					'car'
+				);
+				sprite.anchor.setTo(0.5, 0.5);
+				sprite.angle = game.rnd.integerInRange(-70, -110);
+				vehicle.sprite = sprite;
+				
+				vehicle.name = 'Car' + i;
+				vehicle.vel = game.rnd.integerInRange(0, 100);
+				vehicle.cluster = -1;
+				
+				vehicle_list[i] = vehicle;
+			}
+		}
+		
+		function update() {
+			
+		}
+	</script>
+
+	<script>
+		/*vehicle_list -> 자동차 객체, game -> 게임 객체.
+		 
+		*/
+		/*{} <- key, value.*/
+		/*option <- game, dist_scale*/
+		var clusteringNode = new ClusteringNode(vehicle_list, {
+			game: game,
+			dist_scale: 600
+		});
+
+		var style = {
+			font: '12px Courier',
+			fill: '#ffffff'
+		};
+
+		var clusterList;
+
+		function processClusteringDriver() {
+			clusteringNode.cluster();
+
+
+			clusterList = clusteringNode.getClusterList();
+			var colorList = randomColor({
+				luminosity: 'dark',
+				count: clusterList.length
+			});
+
+			for(i in clusterList) {
+				colorNum = parseInt('0x' + colorList[i].substring(1), 16);
+				
+				for(j in clusterList[i].vehicle_list) {
+					var vehicle = clusterList[i].vehicle_list[j];
+					var sprite = vehicle.sprite;
+
+					var name_text = game.add.text(0,0,'N:' + vehicle.name, style);
+					name_text.alignTo(sprite, Phaser.LEFT_TOP, 5);
+
+					var cluster_text = game.add.text(0, 0, 'C:' + i, style);
+					cluster_text.alignTo(sprite, Phaser.RIGHT_TOP, 5);
+
+					var vel_text = game.add.text(0, 0, 'V:' + vehicle.vel, style);
+					vel_text.alignTo(sprite, Phaser.RIGHT_BOTTOM, 5);
+
+					var graphics = game.add.graphics(0, 0);
+					graphics.clear();
+					graphics.lineStyle(1, 0xffffff);
+					graphics.beginFill(colorNum, 0.6);
+					graphics.drawCircle(sprite.x, sprite.y, 40);
+					graphics.endFill();
+				}
+
+				if(clusterList[i].first != clusterList[i].last) {
+					var order_text = game.add.text(0, 0, 'First of ' +  i, style);
+					order_text.alignTo(clusterList[i].first.sprite, Phaser.LEFT_BOTTOM, 5);
+
+					order_text = game.add.text(0,0, 'Last of ' + i, style);
+					order_text.alignTo(clusterList[i].last.sprite, Phaser.LEFT_BOTTOM, 5);
+				}
+			}
+		}
+	</script>
+	
+	<script>
+		function detection1 () {
+			clusteringNode.cluster();
+			var clusterList1;
+			clusterList1 = clusteringNode.getClusterList();
+			
+			var count_clusterList = clusterList1.length;
+			
+			for (var i=0; i<count_clusterList-1; i++) {
+				var std_cluster = clusterList1[i];
+				for(var j=i+1; j<count_clusterList; j++) {
+					var other_cluster = clusterList1[j];
+					
+					if(std_cluster.first)
+				}
+			}
+			
+		}
+	</script>
+	
+</html>
