@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+	<head>
+
+		<script>
+			var interval;
+			var cn, dn, fn;
+			function init(){
+				if(typeof(cn) == 'undefined') {
+					cn = new Worker('resource/js/worker1.js');
+				}
+				if(typeof(dn) == 'undefined') {
+					dn = new Worker('resource/js/worker2.js');					
+				}
+				if(typeof(fn) == 'undefined') {
+					fn = new Worker('resource/js/worker3.js');
+				}
+
+				cn.onmessage = function(event) {
+					console.log('worker1 done');
+					dn.postMessage(event.data);
+					fn.postMessage(event.data);
+				}
+
+				dn.onmessage = function(event) {
+					console.log(event.data);
+				};
+
+				fn.onmessage = function(event) {
+					console.log(event.data);
+				}
+			}
+			
+
+			function startInterval() {
+				if(interval == null) {
+					interval = setInterval(function(){
+						cn.postMessage(1);
+					}, 3000);
+				}
+			}
+
+			function stopInterval() {
+				clearInterval(interval);
+			}
+
+			init();
+			startInterval();
+		</script>
+
+	</head>
+
+	<body>
+
+	</body>
+</html>
