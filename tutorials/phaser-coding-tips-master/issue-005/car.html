@@ -274,11 +274,15 @@
                     /*회피가능범위 Detection*/
                     if(this.directions[t].index !== this.safetile) {
                         //일정횟수이상 알람이 울리면 일단 계속 진행하기위해 알림을 멈추려 하나 실패.
+                        
                         flag_alert_cnt++;
                         if(flag_alert_cnt === 3){
                             break;
                         }
-                        
+                        /*
+                        sprite.tint = 0x99ff99;
+                        selected_vehicle = findVehicle(sprite);
+                        */
                         window.alert("Warning! Detection something");
                         return;
                     }
