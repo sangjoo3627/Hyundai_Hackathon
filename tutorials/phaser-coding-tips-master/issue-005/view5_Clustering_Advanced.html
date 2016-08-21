@@ -112,7 +112,8 @@
 			},
 
 			/*satisfy -> return : false, front, rear
-
+				1. 범위에 들어오는 지.
+				2. 첫번째인지 라스트인지.
 			*/
 			_satisfy: function(src, trgt) {
 				var src_sprite = src.sprite;
@@ -265,10 +266,31 @@
 		var clusterList;
 
 		function processClusteringDriver() {
+			//cluster가 이 호출로 인해 끝남.
 			clusteringNode.cluster();
 
 
 			clusterList = clusteringNode.getClusterList();
+			/*
+			Here, we detect the accident.
+			
+			var loopCnt1, loopCnt2;
+
+			for(loopCnt1=0; loopCnt1<clusterList.getSize(); loopCnt1++){
+				for(loopCnt2=loopCnt1+1; loopCnt<numOfCluster; loopCnt2++){
+					psudo code :
+						if clusterList[loopCnt1].first is overlapped with clusterList[loopCnt2].last
+							-> alert : clusterList[loopCnt1] : 너가 가해자야.
+									 : clusterList[loopCnt2] : 너가 피해자야.
+						else if clusterList[loopCnt2].first is overlapped with clusterList[loopCnt1].last
+							-> alert : clusterList[loopCnt2] : 너가 가해자야.
+									   clusterList[loopCnt1] : 너가 피해자야.
+				}
+			}
+
+			*/
+
+			
 			var colorList = randomColor({
 				luminosity: 'dark',
 				count: clusterList.length
