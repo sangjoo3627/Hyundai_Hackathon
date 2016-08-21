@@ -1,0 +1,217 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Clustering</title>
+		<script type="text/javascript" src="resource/js/jquery-3.1.0.min.js"></script>
+		<script type="text/javascript" src="resource/js/phaser.min.js"></script>
+	</head>
+	
+	<body>
+		<div id="viewport"></div>
+		<div id="setting">
+			<button onclick="processClusteringDriver()">Cluster</button>
+		</div>
+	</body>
+	<script>
+		var screen_width = 200;
+		var screen_height = 600;
+		var arr_of_vehicles = [];
+		var bodies;
+		
+		var game = new Phaser.Game(screen_width, screen_height, Phaser.Auto, 'viewport', {
+				preload: preload,
+				create: create,
+				update: update
+		});
+		
+		function preload() {
+			var assetFolderDir = 'resource/assets/';
+			game.load.image('star', assetFolderDir + 'star.png');
+			game.load.image('car', assetFolderDir + 'car90.png');
+		}
+		
+		function create() {
+			game.stage.backgroundColor = '#0072bc';
+		
+			game.physics.startSystem(Phaser.Physics.ARCADE);
+			
+			bodies = game.add.group();
+			
+			for(var i = 0; i < 7; i ++) {
+				var vehicle = {};
+				
+				var style = {
+					font: '15px Courier',
+					fill: '#ffffff'
+				};
+				vehicle.cluster_text = game.add.text(0, 0, '', style);
+				vehicle.vel_text = game.add.text(0, 0, '', style);
+				
+				vehicle.detect_front_area = game.add.graphics(0, 0);
+				vehicle.detect_back_area = game.add.graphics(0, 0);
+				
+				var body = bodies.create(
+					game.rnd.integerInRange(50, screen_width - 50),
+					game.rnd.integerInRange(50, screen_height - 50),
+					'car'
+				);
+				body.anchor.setTo(0.5, 0.5);
+				body.angle = game.rnd.integerInRange(-70, -110);
+				vehicle.body = body;
+				
+				vehicle.velocity = game.rnd.integerInRange(0, 100);
+				vehicle.cluster = -1;
+				
+				arr_of_vehicles[i] = vehicle;
+			}
+		}
+		
+		function update() {
+			
+		}
+	</script>
+	
+	<script>
+		function processClusteringDriver() {
+			processClustering(arr_of_vehicles);
+			
+			for(i in arr_of_vehicles) {
+				
+				
+				var vehicle = arr_of_vehicles[i];
+				var sprite = vehicle.body;
+				
+				cluster_text = vehicle.cluster_text;
+				cluster_text.text = vehicle.cluster;
+				
+				vel_text = vehicle.vel_text;
+				vel_text.text = vehicle.velocity;
+				
+				cluster_text.alignTo(sprite, Phaser.RIGHT_TOP, 5);
+				vel_text.alignTo(sprite, Phaser.RIGHT_BOTTOM, 5);
+				
+				detect_front_area = vehicle.detect_front_area;
+				detect_front_area.clear();
+				detect_front_area.lineStyle(1, 0xffffff)
+				detect_front_area.beginFill(0xa000f3, 0.2);
+				detect_front_area.arc(sprite.x, sprite.y,
+					getClusterDetectionDistance(vehicle),
+					sprite.rotation + angle_err,
+					sprite.rotation - angle_err,
+					true
+				);
+				detect_front_area.endFill();
+				
+				detect_back_area = vehicle.detect_back_area;
+				detect_back_area.clear();
+				detect_back_area.lineStyle(1, 0xffffff)
+				detect_back_area.beginFill(0x00ff44, 0.2);
+				detect_back_area.arc(sprite.x, sprite.y,
+					getClusterDetectionDistance(vehicle),
+					game.math.reverseAngle(sprite.rotation) + angle_err,
+					game.math.reverseAngle(sprite.rotation) - angle_err,
+					true
+				);
+				detect_back_area.endFill();
+				
+				sprite.bringToTop();
+			}
+		}
+		
+		function processClustering(vehicles) {
+			initClusters(vehicles);
+			var cluster_num = 0;
+						
+			for(i in vehicles) {
+				if(!isClustered(vehicles[i])) {
+					vehicles[i].cluster = cluster_num;
+					makeCluster(vehicles, vehicles[i], cluster_num);
+					cluster_num = cluster_num + 1;
+				}				
+			}
+		
+		}
+	
+		function initClusters(vehicles) {
+			for(i in vehicles) {
+				vehicles[i].cluster = -1;
+			}
+		}
+		
+		function isClustered(vehicle) {
+			return vehicle.cluster != -1;
+		}
+		
+		function makeCluster(vehicles, vehicle, cluster_num) {
+			for(i in vehicles) {
+				if(vehicles[i] != vehicle && satisfyClusterCond(vehicle, vehicles[i])) {
+					vehicles[i].cluster = cluster_num;
+				}
+			}
+		}
+		
+		function satisfyClusterCond(source, target) {
+			var src_sprite = source.body;
+			var trgt_sprite = target.body;
+			
+			var src_dst = getClusterDetectionDistance(source);
+			var trgt_dst = getClusterDetectionDistance(target);
+			var bet_dst = game.physics.arcade.distanceBetween(src_sprite, trgt_sprite);
+			
+			if(src_dst < bet_dst || trgt_dst < bet_dst) {
+				return false;
+			}
+			
+			var src_rot = src_sprite.rotation;
+			var trgt_rot = trgt_sprite.rotation;
+			var bet_rot = game.physics.arcade.angleBetween(src_sprite, trgt_sprite);
+			
+			if(isInLine(src_rot, trgt_rot, bet_rot)) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		
+		var vel_ratio = 10;
+		var dist_scale = 500;
+		function getClusterDetectionDistance(source) {
+			var vel = source.velocity;
+			
+			return (Math.atan(-(Math.floor(vel / vel_ratio))) + (Math.PI / 2)) * dist_scale;
+		}
+		
+		function isInLine(src_angle, trgt_angle, diff_angle) {
+			if(!isAngleParallel(src_angle, trgt_angle)) {
+				return false;
+			}
+			
+			var rev_diff_angle = game.math.reverseAngle(diff_angle);
+			
+			if(isAngleParallel(src_angle, diff_angle)){
+				if(isAngleParallel(trgt_angle, diff_angle)) {
+					return true;
+				}
+			} else if (isAngleParallel(src_angle, rev_diff_angle)) {
+				if(isAngleParallel(trgt_angle, rev_diff_angle)) {
+					return true;
+				}
+			} else {
+				return false;
+			}
+		}
+		
+		var angle_err = Math.PI / 6;
+		function isAngleParallel(src_angle, trgt_angle) {
+			var diff = game.math.normalizeAngle(src_angle - trgt_angle);
+			
+			if(diff < angle_err || diff > (Math.PI * 2 - angle_err)) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		
+	
+	</script>
+</html>
