@@ -190,6 +190,10 @@
 		<div id="setting">
 			<button onclick="processClusteringDriver()">Cluster</button>
 		</div>
+
+		<div>
+			<button onclick="detection1()">Detecting1</button>
+		</div>
 	</body>
 	<script>
 		/*Making More Real Situation.*/
@@ -280,11 +284,14 @@
 				for(loopCnt2=loopCnt1+1; loopCnt<clusterList.getSize(); loopCnt2++){
 					psudo code :
 						if clusterList[loopCnt1].first is overlapped with clusterList[loopCnt2].last
+
 							-> alert : clusterList[loopCnt1] : 너가 가해자야.
 									 : clusterList[loopCnt2] : 너가 피해자야.
 						else if clusterList[loopCnt2].first is overlapped with clusterList[loopCnt1].last
 							-> alert : clusterList[loopCnt2] : 너가 가해자야.
 									   clusterList[loopCnt1] : 너가 피해자야.
+						else
+							-> no 관련.
 				}
 			}
 
@@ -328,6 +335,54 @@
 					order_text.alignTo(clusterList[i].last.sprite, Phaser.LEFT_BOTTOM, 5);
 				}
 			}
+		}
+	</script>
+
+	<script>
+		/**/
+		
+		function detection1(){
+			clusteringNode.cluster();
+			var clusterList1 = clusteringNode.getClusterList();
+			var count_clusterList = clusteringNode.getSize();
+			
+			/*내부에서만 쓸 수 있음.*/
+			function getDetectDst_Danger(vel){
+				return (Math.atan(-(Math.floor(vel / this._vel_div_ratio))) + (Math.PI / 2)) * this._dist_scale;
+			}
+
+			for(var i=0; i<count_clusterList; i++){
+				for(var j=i+1; j<count_clusterList; j++){
+					var std_cluster = clusterList1[i];
+					var other_cluster = clusterList1[j];
+
+					var other_center;
+					var std_center;
+					
+					var danger_area1 = clusterList1[i].last.getDetectDst_Danger(clusterList1[i].last.vel);
+					var danger_area2 = clusterList1[j].last.getDetectDst_Danger(clusterList1[j].last.vel);
+
+					other_center1 = clusterList1[j].first.sprite;
+					std_center1 = clusterList1[i].last.sprite;
+
+					other_center2 = clusterList1[i].first.sprite;
+					std_center2 = clusterList1[j].last.sprite;
+					
+					var test_distance1 = this._game.physics.arcade.angleBetween(std_center1, other_center1);
+					var test_distance2 = this._game.physics.arcade.angleBetween(std_center2, other_center2);
+
+					if(test_distance1 <= danger_area1 /*&& 각도비교*/){
+						//std가 피해자고, other가 가해자.
+					} else if(test_distance2 <= danger_area2 /*&& 각도비교*/){
+						//std가 가해자고, other가 피해자.
+					}
+					else{
+						//관련이 없음.
+					}
+				}
+
+			}
+
 		}
 	</script>
 
