@@ -368,16 +368,19 @@
 					other_center2 = clusterList1[i].first.sprite;
 					std_center2 = clusterList1[j].last.sprite;
 					
-					var test_distance1 = this._game.physics.arcade.angleBetween(std_center1, other_center1);
-					var test_distance2 = this._game.physics.arcade.angleBetween(std_center2, other_center2);
+					var test_distance1 = this._game.physics.arcade.distanceBetween(std_center1, other_center1);
+					var test_distance2 = this._game.physics.arcade.distanceBetween(std_center2, other_center2);
 
 					if(test_distance1 <= danger_area1 /*&& 각도비교*/){
 						//std가 피해자고, other가 가해자.
+						console.log(j+' is killer. and '+j+' is victim.');
 					} else if(test_distance2 <= danger_area2 /*&& 각도비교*/){
 						//std가 가해자고, other가 피해자.
+						console.log(i+' is killer. and '+j+' is victim.');
 					}
 					else{
 						//관련이 없음.
+						console.log(i+' and '+j+' are not correlated.');
 					}
 				}
 
