@@ -277,14 +277,12 @@
                         
                         flag_alert_cnt++;
                         if(flag_alert_cnt === 3){
-                            break;
-                        }
-                        /*
-                        sprite.tint = 0x99ff99;
-                        selected_vehicle = findVehicle(sprite);
-                        */
-                        window.alert("Warning! Detection something");
-                        return;
+							window.alert("Warning! Detection something");
+							break;
+                        } else if(flag_alert_cnt > 3) {
+							this.car.tint = 0xff9999;
+							flag_alert_cnt = 3;
+						}
                     }
                 }
 
