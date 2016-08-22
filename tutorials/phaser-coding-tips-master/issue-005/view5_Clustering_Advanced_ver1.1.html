@@ -221,7 +221,7 @@
 			
 			sprites = game.add.group();
 			
-			for(var i = 0; i < 7; i ++) {
+			for(var i = 0; i < 5; i ++) {
 				var vehicle = {};
 				
 				var style = {
@@ -346,7 +346,7 @@
 
 			function getDetectDst_Danger(vel){
 				//return (Math.atan(-(Math.floor(vel / vel_div_ratio))) + (Math.PI / 2)) * dist_scale;
-				return (1 + (1/(vel+1)))*200;
+				return (1 + (1/(vel+1)))*250;
 			}
 
 			for(var i=0; i<count_clusterList; i++){
