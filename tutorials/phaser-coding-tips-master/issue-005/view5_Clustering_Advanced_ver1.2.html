@@ -222,7 +222,7 @@
 			
 			sprites = game.add.group();
 			
-			for(var i = 0; i < 7; i ++) {
+			for(var i = 0; i < 8; i ++) {
 				var vehicle = {};
 				
 				var style = {
@@ -437,7 +437,7 @@
 					if(killer.vel <= victim.vel){
 						return false;
 					}
-					/*
+					
 					var test_safe_dist = game.physics.arcade.distanceBetween(killer.sprite, victim.sprite);
 					var avoid_dist_killer = getDetectDst_Danger(killer.vel);
 					if(test_safe_dist < avoid_dist_killer){
@@ -447,7 +447,7 @@
 							return false;
 						}
 					}
-					*/
+					
 					/*
 					if() {
 						return true;
