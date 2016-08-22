@@ -345,7 +345,8 @@
 			var dist_scale = 500;
 
 			function getDetectDst_Danger(vel){
-				return (Math.atan(-(Math.floor(vel / vel_div_ratio))) + (Math.PI / 2)) * dist_scale;
+				//return (Math.atan(-(Math.floor(vel / vel_div_ratio))) + (Math.PI / 2)) * dist_scale;
+				return (1 + (1/(vel+1)))*200;
 			}
 
 			for(var i=0; i<count_clusterList; i++){
@@ -360,17 +361,17 @@
 					var danger_area2 = getDetectDst_Danger(clusterList1[j].last.vel);
 
 					/*Posible to be a Killer*/
-					other_center1 = clusterList1[j].first.sprite;
+					other_center1 = clusterList1[j].first;
 					/*Posible to be a Victim*/
-					std_center1 = clusterList1[i].last.sprite;
+					std_center1 = clusterList1[i].last;
 
 					/*Posible to be a Killer*/
-					other_center2 = clusterList1[i].first.sprite;
+					other_center2 = clusterList1[i].first;
 					/*Posible to be a Victim*/
-					std_center2 = clusterList1[j].last.sprite;
+					std_center2 = clusterList1[j].last;
 					
-					var test_distance1 = game.physics.arcade.distanceBetween(std_center1, other_center1);
-					var test_distance2 = game.physics.arcade.distanceBetween(std_center2, other_center2);
+					var test_distance1 = game.physics.arcade.distanceBetween(std_center1.sprite, other_center1.sprite);
+					var test_distance2 = game.physics.arcade.distanceBetween(std_center2.sprite, other_center2.sprite);
 
 					if((test_distance1 <= danger_area1) && isEffectivePosition(other_center1, std_center1)){
 						//std가 피해자고, other가 가해자.
@@ -391,13 +392,13 @@
 	<script>
 		function isEffectivePosition(killer, victim){
 			/*Must be use function : angleBetween*/
-			var killer_xPos = killer.x;
-			var killer_yPos = killer.y;
-			var victim_xPos = victim.x;
-			var victim_yPos = victim.y;
+			var killer_xPos = killer.sprite.x;
+			var killer_yPos = killer.sprite.y;
+			var victim_xPos = victim.sprite.x;
+			var victim_yPos = victim.sprite.y;
 
-			var killer_angle = convertToDegree(normalizeRadian(killer.rotation));
-			var victim_angle = convertToDegree(normalizeRadian(victim.rotation));
+			var killer_angle = convertToDegree(normalizeRadian(killer.sprite.rotation));
+			var victim_angle = convertToDegree(normalizeRadian(victim.sprite.rotation));
 			var diffAngle = (killer_angle - victim_angle);
 
 			var diffVector_xPos = (victim_xPos - killer_xPos);
@@ -405,8 +406,12 @@
 			var diffVector_length = Math.sqrt(Math.pow(diffVector_xPos, 2) + Math.pow(diffVector_yPos, 2));
 			var diffVectorAngle = -(convertToDegree(normalizeRadian(Math.acos(diffVector_xPos/diffVector_length))));
 
-			if(Math.abs(victim_angle-diffVectorAngle)<30){
-				if(Math.abs(killer_angle-diffVectorAngle)<30){
+			//if(Math.abs(victim_angle-diffVectorAngle)<30){
+			if(game.physics.arcade.angleBetween(killer.sprite, victim.sprite)<0){
+				if(Math.abs(killer_angle-diffVectorAngle)<35){
+					if(killer.vel <= victim.vel){
+						return false;
+					}
 					return true;
 				}
 				return false;
