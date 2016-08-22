@@ -44,7 +44,7 @@
 				for(var i=0; i<this.cluster_num; i++){
 					var checked_cluster = this.cluster_list[i];
 					var test_distance = game.physics.arcade.distanceBetween(this.center, checked_cluster.first.sprite);
-					var danger_vel = 70;
+					var danger_vel = 50;
 					
 					// 해당 cluster가 center의 범위내에 닿았을 때 road_list에 담고 신호등 체크
 					if(test_distance <= this.center_dist)
@@ -65,7 +65,7 @@
 						else if(test_angle == this.angle2 && ((this.center.y+this.stopline)<=checked_cluster.first.sprite.y))
 						{
 							this.road2.push(checked_cluster);
-							if((this.signal2 == 0) && (checked_cluster.first.vel > danger_vel)){
+							if((this.signal2 == 0) && (checked_cluster.first.vel > da nger_vel)){
 								this.danger_cluster_list.push(checked_cluster);
 							}
 						}
