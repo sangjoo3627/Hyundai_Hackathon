@@ -19,13 +19,13 @@
 			<button onclick="cluster()">CLUSTER</button>
 			
 			
-			<form id="config" onSubmit="changeVehicleProperty(); return false;">
+			<form id="config">
 				<input name="veh_name" type="text" />
 				<input name="pos_x" type="number" />
 				<input name="pos_y" type="number" />
 				<input name="vel" type="number" min="0" max="150" />
 				<input name="angle" type="number" />
-				<input type="submit" value="Change" />
+				<input type="button" value="change" onclick="changeVehicleProperty()" />
 			</form>
 		</div>
 	</body>
@@ -60,7 +60,7 @@
 		var cluster_list = [];
 		
 		var selected_vehicle = {};
-		var selected_detect_arc;
+		var detect_arc;
 		var form = 	$('form#config');
 		
 		
@@ -77,16 +77,16 @@
 		}
 
 		function create() {
-			game.stage.backgroundColor = randomColor();
+			game.stage.backgroundColor = '#99FF00';
 
 			game.input.mouse.mouseWheelCallback = mouseWheel;
 			game.input.mouse.mouseDownCallback = mouseDown;
 			
-			selected_detect_arc = game.add.graphics(0, 0);
+			detect_arc = game.add.graphics(0, 0);
 		}
 
 		function update() {
-
+			updateDetectArc();
 		}
 		
 		var clusteringNode = new ClusteringNode();
@@ -103,7 +103,6 @@
 				if(selected_vehicle.sprite != null) {
 					selected_vehicle.sprite.tint = 0xffffff;
 					selected_vehicle = {};
-					resetArc();
 					resetConfig();
 				}
 			} else {
@@ -120,6 +119,7 @@
 		function mouseWheel(event) {
 			if(selected_vehicle.sprite != null) {
 				selected_vehicle.sprite.angle += game.input.mouse.wheelDelta * 5;
+				
 				setConfig({
 					angle: convertToDegree(selected_vehicle.sprite.rotation)
 				});
@@ -157,8 +157,29 @@
 			}
 		}
 		
-		function showDetectArc() {
+		function updateDetectArc() {
+			detect_arc.clear();
 			
+			if(selected_vehicle.sprite != null) {
+				vehicle = selected_vehicle;
+				sprite = vehicle.sprite;
+				
+				detect_arc.lineStyle(1, 0xffffff);
+				detect_arc.beginFill(0xCC0000, 0.9);
+				detect_arc.arc(sprite.x, sprite.y,
+					clusteringNode._getDetectDst(vehicle.vel),
+					sprite.rotation + clusteringNode._angle_tole,
+					sprite.rotation - clusteringNode._angle_tole,
+					true
+				);
+				detect_arc.arc(sprite.x, sprite.y,
+					clusteringNode._getDetectDst(vehicle.vel),
+					game.math.reverseAngle(sprite.rotation) + clusteringNode._angle_tole,
+					game.math.reverseAngle(sprite.rotation) - clusteringNode._angle_tole,
+					true
+				);
+				detect_arc.endFill();
+			}			
 		}
 	</script>
 
@@ -167,11 +188,11 @@
 		 * Configuration getter setter
 		 */		
 		function getConfig() {
-			var veh_name = form.find('[name=veh_name]').val(new_config.veh_name);
-			var pos_x = form.find('[name=pos_x]').val(new_config.pos_x);
-			var pos_y = form.find('[name=pos_y]').val(new_config.pos_y);
-			var vel = form.find('[name=vel]').val(new_config.vel);
-			var angle = form.find('[name=angle]').val(new_config.angle);
+			var veh_name = form.find('[name=veh_name]').val();
+			var pos_x = form.find('[name=pos_x]').val();
+			var pos_y = form.find('[name=pos_y]').val();
+			var vel = form.find('[name=vel]').val();
+			var angle = form.find('[name=angle]').val();
 		
 			return {
 				veh_name: veh_name,
@@ -216,7 +237,7 @@
 
 			added_sprite.inputEnabled = true;
 			added_sprite.input.enableDrag(true);
-			added_sprite.input.enableSnap(16, 16, false, true);
+			// added_sprite.input.enableSnap(16, 16, false, true);
 			
 			added_sprite.events.onDragUpdate.add(updateVehiclePos, this);
 			
@@ -259,7 +280,8 @@
 		 */
 		function changeVehicleProperty() {
 			var config = getConfig();
-			var name = config.name;
+			
+			var name = config.veh_name;
 			var x = parseInt(config.pos_x);
 			var y = parseInt(config.pos_y);
 			var vel = parseInt(config.vel);
@@ -273,8 +295,6 @@
 
 			selected_vehicle.name = name;
 			selected_vehicle.vel = vel;
-
-			return true;
 		}
 	</script>
 	

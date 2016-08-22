@@ -18,9 +18,10 @@ ClusteringNode.prototype = {
 			update: function() {}
 		});
 		this._vel_div_ratio = options.vel_div_ratio || 10;
-		this._dist_scale = options.dist_scale || 500;
-
-		this._angle_tole = options.angle_tole || (Math.PI / 12);
+		// scale factor times 5
+		this._dist_scale = options.dist_scale || 5;
+		// 7 degree for left and right
+		this._angle_tole = options.angle_tole || 0.122173;
 	},
 
 	init: function() {
@@ -38,6 +39,14 @@ ClusteringNode.prototype = {
 	
 	setVehicleList: function(vehicle_list) {
 		this._vehicle_list = vehicle_list;
+	},
+	
+	setAngleTole: function(angle_tole) {
+		this._angle_tole = angle_tole;
+	},
+	
+	setDistScale: function(dist_scale) {
+		this._dist_scale = dist_scale;
 	},
 	
 	getVehicleList: function() {
@@ -137,7 +146,7 @@ ClusteringNode.prototype = {
 	},
 
 	_getDetectDst: function(vel) {
-		return (Math.atan(-(Math.floor(vel / this._vel_div_ratio))) + (Math.PI / 2)) * this._dist_scale;
+		return (10 - vel / 6) * this._dist_scale;
 	},
 
 	_isInLine: function(src_rot, trgt_rot, bet_rot) {
