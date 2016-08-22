@@ -132,9 +132,10 @@ ClusteringNode.prototype = {
 		var src_rot = src_sprite.rotation;
 		var trgt_rot = trgt_sprite.rotation;
 		var bet_rot = this._game.physics.arcade.angleBetween(src_sprite, trgt_sprite);
+		var src_vel = src.vel;
 
 		//console.log('rot: ' + src_rot + ' / ' + trgt_rot + ' / ' + bet_rot);
-		var switch_pos = this._isInLine(src_rot, trgt_rot, bet_rot)
+		var switch_pos = this._isInLine(src_rot, trgt_rot, bet_rot, src_vel);
 
 		if( switch_pos == 'front') {
 			return 'front';
@@ -149,30 +150,41 @@ ClusteringNode.prototype = {
 		return (10 - vel / 6) * this._dist_scale;
 	},
 
-	_isInLine: function(src_rot, trgt_rot, bet_rot) {
+	_isInLine: function(src_rot, trgt_rot, bet_rot, src_vel) {
 		if(!this._isParallel(src_rot, trgt_rot)) {
 			return 'false';
 		}
 
 		var rev_bet_rot = this._game.math.reverseAngle(bet_rot);
 
-		if(this._isParallel(src_rot, bet_rot)) {
-			if(this._isParallel(trgt_rot, bet_rot)) {
+		if(this._isParallel(src_rot, bet_rot, src_vel)) {
+			if(this._isParallel(trgt_rot, bet_rot, src_vel)) {
 				return 'rear';
 			}
-		} else if(this._isParallel(src_rot, rev_bet_rot)) {
-			if(this._isParallel(trgt_rot, rev_bet_rot)) {
+		} else if(this._isParallel(src_rot, rev_bet_rot, src_vel)) {
+			if(this._isParallel(trgt_rot, rev_bet_rot, src_vel)) {
 				return 'front';
 			}
 		} else {
 			return 'false';
 		}
 	},
+	
+	_getAngleTole: function(vel) {
+		if(vel > 30) {
+			var c_vel = vel * 5 / 18;
+			var r = 0.8493 * c_vel * c_vel - 8.0045 * c_vel + 39.091;
+			return c_vel / r;
+		} else {
+			return 0.122173;
+		}				
+	},
 
-	_isParallel: function(angle1, angle2) {
+	_isParallel: function(angle1, angle2, vel) {
 		var diff = this._game.math.normalizeAngle(angle1 - angle2);
+		var angle_tole = this._getAngleTole(vel)
 
-		if(diff < this._angle_tole || diff > (Math.PI * 2 - this._angle_tole)) {
+		if(diff < angle_tole || diff > (Math.PI * 2 - angle_tole)) {
 			return true;
 		} else {
 			return false;

@@ -168,14 +168,14 @@
 				detect_arc.beginFill(0xCC0000, 0.9);
 				detect_arc.arc(sprite.x, sprite.y,
 					clusteringNode._getDetectDst(vehicle.vel),
-					sprite.rotation + clusteringNode._angle_tole,
-					sprite.rotation - clusteringNode._angle_tole,
+					sprite.rotation + clusteringNode._getAngleTole(vehicle.vel),
+					sprite.rotation - clusteringNode._getAngleTole(vehicle.vel),
 					true
 				);
 				detect_arc.arc(sprite.x, sprite.y,
 					clusteringNode._getDetectDst(vehicle.vel),
-					game.math.reverseAngle(sprite.rotation) + clusteringNode._angle_tole,
-					game.math.reverseAngle(sprite.rotation) - clusteringNode._angle_tole,
+					game.math.reverseAngle(sprite.rotation) + clusteringNode._getAngleTole(vehicle.vel),
+					game.math.reverseAngle(sprite.rotation) - clusteringNode._getAngleTole(vehicle.vel),
 					true
 				);
 				detect_arc.endFill();
