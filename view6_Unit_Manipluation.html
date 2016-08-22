@@ -5,203 +5,288 @@
 		<script type="text/javascript" src="resource/js/jquery-3.1.0.min.js"></script>
 		<script type="text/javascript" src="resource/js/phaser.min.js"></script>
 		<script type="text/javascript" src="resource/js/randomColor.js"></script>
+		
+		<script type="text/javascript" src="resource/js/clusteringNode.js"></script>
+		
+		<script type="text/javascript" src="resource/js/util.js"></script>
 	</head>
 
 	<body>
 		<div id="viewport"></div>
 		<div id="setting_holder">
 			<button onclick="addVehicle()">ADD</button>
-
-			<form id="config" onSubmit="changeConfig(); return false;">
+			<button onclick="deleteVehicle()">DELETE</button>
+			<button onclick="cluster()">CLUSTER</button>
+			
+			
+			<form id="config" onSubmit="changeVehicleProperty(); return false;">
 				<input name="veh_name" type="text" />
 				<input name="pos_x" type="number" />
 				<input name="pos_y" type="number" />
 				<input name="vel" type="number" min="0" max="150" />
 				<input name="angle" type="number" />
-				<input type="submit" val="Change" />
+				<input type="submit" value="Change" />
 			</form>
 		</div>
 	</body>
-
+	
 	<script>
-	function randomColorToHex(options) {
-		var code = randomColor(options);
+		/*
+		 * Random Coloring
+		 */
+		function randomColorToHex(options) {
+			var code = randomColor(options);
 
-		if(code.constructor == Array) {
-			var temp = [];
-			for(i in code) {
-				temp.push(parseInt('0x' + code[i].substring(1), 16));
-			}
-			return temp;
-		} else {
-			return parseInt('0x' + code.substring(1), 16)
-		}
-	}
-	</script>
-
-	<script>
-	var screen_width = 500;
-	var screen_height = 600;
-	var vehicle_num = 0;
-	var vehicle_list = [];
-	var selected_vehicle = {};
-	var form = 	$('form#config');
-
-	var game = new Phaser.Game(screen_width, screen_height, Phaser.AUTO, 'viewport', {
-		preload: preload,
-		create: create,
-		update: update
-	});
-
-	function preload() {
-		var assetFolderDir = 'resource/assets/';
-		game.load.image('star', assetFolderDir + 'star.png');
-		game.load.image('car', assetFolderDir + 'car90.png');
-	}
-
-	function create() {
-		game.stage.backgroundColor = randomColor();
-
-		game.input.mouse.mouseWheelCallback = mouseWheel;
-		game.input.mouse.mouseDownCallback = mouseDown;
-	}
-
-	function update() {
-
-	}
-	</script>
-
-	<script>
-	function mouseDown(event) {
-		var target_object = game.input.activePointer.targetObject;
-
-		if(target_object == null) {
-			if(selected_vehicle.sprite != null) {
-				selected_vehicle.sprite.tint = 0xffffff;
-				selected_vehicle = {};
-				form.trigger('reset');
-			}
-		} else {
-			if (selected_vehicle.sprite == null) {
-				selectVehicle(target_object.sprite);
-
-			} else if(target_object.sprite != selected_vehicle.sprite) {
-				selected_vehicle.sprite.tint = 0xffffff;
-				selectVehicle(target_object.sprite);
+			if(code.constructor == Array) {
+				var temp = [];
+				for(i in code) {
+					temp.push(parseInt('0x' + code[i].substring(1), 16));
+				}
+				return temp;
+			} else {
+				return parseInt('0x' + code.substring(1), 16)
 			}
 		}
-	}
-
-	function mouseWheel(event) {
-		if(selected_vehicle.sprite != null) {
-			selected_vehicle.sprite.angle += game.input.mouse.wheelDelta * 5;
-			form.find('[name=angle]').val(convertToDegree(selected_vehicle.sprite.rotation));
-		}
-	}
-
-	function updateVehiclePos(sprite) {
-		form.find('[name=pos_x]').val(sprite.x);
-		form.find('[name=pos_y]').val(sprite.y);
-	}	
-
-	function selectVehicle(sprite) {
-		sprite.tint = 0x99ff99;
-
-		selected_vehicle = findVehicle(sprite);
-
-		form.find('[name=veh_name]').val(selected_vehicle.name);
-		form.find('[name=vel]').val(selected_vehicle.vel);
-		form.find('[name=angle]').val(convertToDegree(selected_vehicle.sprite.rotation));
-	}
 	</script>
 
 	<script>
-	function normalizeDegree(angleDeg) {
-		var mod_angle = angleDeg % 360;
-		if(mod_angle > 180) {
-			mod_angle = mod_angle - 360;
-		} else if (mod_angle <= -180) {
-			mod_angle = mod_angle + 360;
-		}
-
-		return mod_angle;
-	}
-
-	function normalizeRadian(angleRad) {
-		var mod_angle = angleRad % (Math.PI * 2);
-		if(mod_angle > Math.PI) {
-			mod_angle = mod_angle - (Math.PI * 2);
-		} else if (mod_angle <= -Math.PI) {
-			mod_angle = mod_angle + (Math.PI * 2);
-		}
-
-		return mod_angle;
-	}
-
-	function convertToRadian(angleDeg) {
-		var norm_deg = normalizeDegree(angleDeg);
-		return norm_deg * Math.PI / 180;
-	}
-
-	function convertToDegree(angleRad) {
-		var norm_rad = normalizeRadian(angleRad);
-		return norm_rad * 180 / Math.PI;
-	}
-	</script>
-
-	<script>
-	function addVehicle() {
-		var added = {};
-
-		var added_sprite = game.add.sprite(game.world.centerX, game.world.centerY, 'car');
-		added_sprite.name = 'Car ' + vehicle_num;
-		vehicle_num ++;
-		added_sprite.anchor.setTo(0.5, 0.5);
-		added_sprite.angle = -90;
-
-		added_sprite.inputEnabled = true;
-		added_sprite.input.enableDrag(true);
-		added_sprite.input.enableSnap(16, 16, false, true);
+		/*
+		 *	Phaser Game Initialization
+		 */ 
+		var screen_width = 500;
+		var screen_height = 600;
+		var vehicle_num = 0;
+		var vehicle_list = [];
+		var cluster_list = [];
 		
-		added_sprite.events.onDragUpdate.add(updateVehiclePos, this);
+		var selected_vehicle = {};
+		var selected_detect_arc;
+		var form = 	$('form#config');
 		
-		added.sprite = added_sprite;
-
-		added.vel = 0;
-		added.name = added_sprite.name;
-
-		vehicle_list.push(added);
-	}
-
-	function findVehicle(sprite) {
-		var found = $.grep(vehicle_list, function(e) {
-			return e.name == sprite.name;
+		
+		var game = new Phaser.Game(screen_width, screen_height, Phaser.AUTO, 'viewport', {
+			preload: preload,
+			create: create,
+			update: update
 		});
-
-		if(found.length == 0) {
-			return null;
-		} else {
-			return found[0];
+		
+		function preload() {
+			var assetFolderDir = 'resource/assets/';
+			game.load.image('star', assetFolderDir + 'star.png');
+			game.load.image('car', assetFolderDir + 'car90.png');
 		}
-	}
 
-	function changeConfig() {
-		var name = form.find('[name=veh_name]').val();
-		var x = parseInt(form.find('[name=pos_x]').val());
-		var y = parseInt(form.find('[name=pos_y]').val());
-		var vel = parseInt(form.find('[name=vel]').val());
-		var angle = parseInt(form.find('[name=angle]').val());
-		var rot = convertToRadian(angle);
+		function create() {
+			game.stage.backgroundColor = randomColor();
 
-		selected_vehicle.sprite.name = name;
-		selected_vehicle.sprite.x = x;
-		selected_vehicle.sprite.y = y;
-		selected_vehicle.sprite.rotation = rot;
+			game.input.mouse.mouseWheelCallback = mouseWheel;
+			game.input.mouse.mouseDownCallback = mouseDown;
+			
+			selected_detect_arc = game.add.graphics(0, 0);
+		}
 
-		selected_vehicle.name = name;
-		selected_vehicle.vel = vel;
+		function update() {
 
-		return true;
-	}
+		}
+		
+		var clusteringNode = new ClusteringNode();
+	</script>
+
+	<script>
+		/*
+		 * Phaser Mouse Event Handler
+		 */
+		function mouseDown(event) {
+			var target_object = game.input.activePointer.targetObject;
+
+			if(target_object == null) {
+				if(selected_vehicle.sprite != null) {
+					selected_vehicle.sprite.tint = 0xffffff;
+					selected_vehicle = {};
+					resetArc();
+					resetConfig();
+				}
+			} else {
+				if (selected_vehicle.sprite == null) {
+					selectVehicle(target_object.sprite);
+
+				} else if(target_object.sprite != selected_vehicle.sprite) {
+					selected_vehicle.sprite.tint = 0xffffff;
+					selectVehicle(target_object.sprite);
+				}
+			}
+		}
+
+		function mouseWheel(event) {
+			if(selected_vehicle.sprite != null) {
+				selected_vehicle.sprite.angle += game.input.mouse.wheelDelta * 5;
+				setConfig({
+					angle: convertToDegree(selected_vehicle.sprite.rotation)
+				});
+			}
+		}
+
+		function updateVehiclePos(sprite) {
+			setConfig({
+				pos_x: sprite.x,
+				pos_y: sprite.y
+			});
+		}	
+
+		function selectVehicle(sprite) {
+			sprite.tint = 0x99ff99;
+
+			selected_vehicle = findVehicle(sprite);
+
+			setConfig({
+				veh_name: selected_vehicle.name,
+				vel: selected_vehicle.vel,
+				angle: convertToDegree(selected_vehicle.sprite.rotation)
+			});
+		}
+		
+		function findVehicle(sprite) {
+			var found = $.grep(vehicle_list, function(e) {
+				return e.name == sprite.name;
+			});
+
+			if(found.length == 0) {
+				return null;
+			} else {
+				return found[0];
+			}
+		}
+		
+		function showDetectArc() {
+			
+		}
+	</script>
+
+	<script>
+		/*
+		 * Configuration getter setter
+		 */		
+		function getConfig() {
+			var veh_name = form.find('[name=veh_name]').val(new_config.veh_name);
+			var pos_x = form.find('[name=pos_x]').val(new_config.pos_x);
+			var pos_y = form.find('[name=pos_y]').val(new_config.pos_y);
+			var vel = form.find('[name=vel]').val(new_config.vel);
+			var angle = form.find('[name=angle]').val(new_config.angle);
+		
+			return {
+				veh_name: veh_name,
+				pos_x: pos_x,
+				pos_y: pos_y,
+				vel: vel,
+				angle: angle
+			};
+		}
+		
+		function setConfig(new_config) {
+			if(new_config.veh_name != null)
+				form.find('[name=veh_name]').val(new_config.veh_name);
+			if(new_config.pos_x != null)
+				form.find('[name=pos_x]').val(new_config.pos_x);
+			if(new_config.pos_y != null)
+				form.find('[name=pos_y]').val(new_config.pos_y);
+			if(new_config.vel != null)
+				form.find('[name=vel]').val(new_config.vel);
+			if(new_config.angle != null)
+				form.find('[name=angle]').val(new_config.angle);
+			
+		}
+		
+		function resetConfig() {
+			form.trigger('reset');
+		}
+	</script>
+	
+	<script>
+		/*
+		 * Add Vehicle
+		 */
+		function addVehicle() {
+			var added = {};
+
+			var added_sprite = game.add.sprite(game.world.centerX, game.world.centerY, 'car');
+			added_sprite.name = 'Car ' + vehicle_num;
+			vehicle_num ++;
+			added_sprite.anchor.setTo(0.5, 0.5);
+			added_sprite.angle = -90;
+
+			added_sprite.inputEnabled = true;
+			added_sprite.input.enableDrag(true);
+			added_sprite.input.enableSnap(16, 16, false, true);
+			
+			added_sprite.events.onDragUpdate.add(updateVehiclePos, this);
+			
+			added.sprite = added_sprite;
+
+			added.vel = 0;
+			added.name = added_sprite.name;
+
+			vehicle_list.push(added);
+		}
+	</script>
+	
+	<script>
+		/*
+		 * Delete Vehicle
+		 */
+		function deleteVehicle() {	
+			var deleted_sprite = selected_vehicle.sprite;
+			
+			if(deleted_sprite == null) {
+				console.log('Nothing Selected');
+				return;
+			}
+			
+			for(i in vehicle_list) {
+				if(vehicle_list[i] == selected_vehicle) {
+					vehicle_list.splice(i, 1);
+				}
+			}
+			
+			deleted_sprite.destroy();
+			selected_vehicle = {};
+			resetConfig();
+		}
+	</script>
+	
+	<script>
+		/*
+		 * Form Submit Change Vehicle Property
+		 */
+		function changeVehicleProperty() {
+			var config = getConfig();
+			var name = config.name;
+			var x = parseInt(config.pos_x);
+			var y = parseInt(config.pos_y);
+			var vel = parseInt(config.vel);
+			var angle = parseInt(config.angle);
+			var rot = convertToRadian(angle);
+
+			selected_vehicle.sprite.name = name;
+			selected_vehicle.sprite.x = x;
+			selected_vehicle.sprite.y = y;
+			selected_vehicle.sprite.rotation = rot;
+
+			selected_vehicle.name = name;
+			selected_vehicle.vel = vel;
+
+			return true;
+		}
+	</script>
+	
+	<script>
+		/*
+		 * Cluster
+		 */
+		 function cluster() {
+			clusteringNode.setVehicleList(vehicle_list);
+			clusteringNode.cluster();
+			vehicle_list = clusteringNode.getVehicleList();
+			cluster_list = clusteringNode.getClusterList();
+		 }
 	</script>
 </html>
