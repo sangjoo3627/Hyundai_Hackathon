@@ -149,8 +149,22 @@
 
 			/*차간 거리를 측정함. arc tan이용.*/
 			_getDetectDst: function(vel) {
-				return (Math.atan(-(Math.floor(vel / this._vel_div_ratio))) + (Math.PI / 2)) * 300;
+				function getAccerlation(vel){
+					var a;
+					var cv = vel * 5 / 18;
+					if(vel <= 60) {
+						a = (-0.04641*vel - 0.1718);
+					}
+					else {
+						a = (-0.0003439) * vel * vel + (0.0856) * vel - 6.854;
+					}
+
+					console.log(a);
+					return a;
+				}
+				//return (Math.atan(-(Math.floor(vel / this._vel_div_ratio))) + (Math.PI / 2)) * 300;
 				//return (1 + (1/(vel+1)))*250;
+				return (Math.pow((vel*5/18),2)/(2*Math.abs(getAccerlation(vel))))+0.2*(vel*5/18);
 			},
 
 			_isInLine: function(src_rot, trgt_rot, bet_rot) {
@@ -304,7 +318,7 @@
 				var arcDrawing_first = clusterList[i].first;
 				var arcDrawing_last = clusterList[i].last;
 				
-				/*arc addition*/
+				/*arc addition
 				
 				var arc1 = game.add.graphics(0, 0);
 				arc1.clear();
@@ -375,10 +389,19 @@
 			/*내부에서만 쓸 수 있음.*/
 			var vel_div_ratio = 10;
 			var dist_scale = 500;
+			function getAccerlation(vel){
+				if(vel <= 60){
+					return (-0.04641*vel - 0.1718);
+				}
+				else {
+					return (-0.0003439*Math.pow((vel*5/18),2)+0.0856*(vel*5/18)-6.854);
+				}
+			}
 
 			function getDetectDst_Danger(vel){
-				return (Math.atan(-(Math.floor(vel / vel_div_ratio))) + (Math.PI / 2)) * dist_scale;
+				//return (Math.atan(-(Math.floor(vel / vel_div_ratio))) + (Math.PI / 2)) * dist_scale;
 				//return (1 + (1/(vel+1)))*200;
+				return (Math.pow((vel*5/18),2)/(2*Math.abs(getAccerlation(vel))))+0.2*(vel*5/18);
 			}
 
 			for(var i=0; i<count_clusterList; i++){
@@ -426,14 +449,52 @@
 			/*Must be use function : angleBetween*/
 			var vel_div_ratio = 10;
 			var dist_scale = 500;
-			function getDetectDst_Danger(vel){
-				return (Math.atan(-(Math.floor(vel / vel_div_ratio))) + (Math.PI / 2)) * dist_scale;
-				//return (1 + (1/(vel+1)))*200;
+			function getAccerlation(vel){
+				if(vel <= 60){
+					return (-0.04641*vel - 0.1718);
+				}
+				else {
+					return (-0.0003439*Math.pow((vel*5/18),2)+0.0856*(vel*5/18)-6.854);
+				}
 			}
+			/*
+				<Absolute Stopping Distance by killer's velocity>
+				1. Velocity(per hour) is transferred to velocity(per second)
+				2. Getting value of accerlation by function from data mining.
+				3. Using 등가속도운동공식 with velocity per seconds and accerlation.
+			*/
+			function getDetectDst_Danger(vel){
+				//return (Math.atan(-(Math.floor(vel / vel_div_ratio))) + (Math.PI / 2)) * dist_scale;
+				return (Math.pow((vel*5/18),2)/(2*Math.abs(getAccerlation(vel))))+0.2*(vel*5/18);
+				
+			}
+			function getRelativeDst_Danger(killer_vel, victim_vel){
+				var goStoppingTime =  (killer_vel-victim_vel)/Math.abs(getAccerlation(killer_vel));
+				return (killer_vel*0.2 + ((killer_vel+victim_vel)/2)*goStoppingTime); 
+			}
+			/*
+				if diff is negative, killer is behind the victim.
+				Also, if killer.vel is bigger than victim.vel, than killer can be more dangerous to victim.
+				We just detect killer's position(behind the victim).
+			*/
 			var diff = game.physics.arcade.angleBetween(killer.sprite, victim.sprite);
-			
-			if(Math.abs(victim.sprite.rotation - diff) < Math.PI * (7 / 36) ) {
-				if(Math.abs(killer.sprite.rotation - diff) < 0.174533 ) {
+			var angle_killer = killer.sprite.rotation;
+			var diff_between_killer_and_diff = Math.abs(angle_killer-diff);
+			if(diff < 0){
+				if(killer.vel <= victim.vel){
+					return false;
+				}
+				/*
+				if(diff_between_killer_and_diff>0.35){
+					return false;
+				}
+				*/
+				return true;
+			}
+
+			/*
+			if(Math.abs(victim.sprite.rotation - diff) < Math.PI*(7/36)) {
+				if(Math.abs(killer.sprite.rotation - diff) < 0.174533) {
 					if(killer.vel <= victim.vel){
 						return false;
 					}
@@ -452,10 +513,11 @@
 					if() {
 						return true;
 					}
-					*/
+					
 					return true;
 				}
 			}
+			*/
 			return false;
 			
 			
