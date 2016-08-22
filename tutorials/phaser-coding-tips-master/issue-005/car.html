@@ -11,7 +11,9 @@
 
     <script type="text/javascript">
 
-    var game = new Phaser.Game(640, 480, Phaser.CANVAS, 'game');
+    var game = new Phaser.Game(800, 600, Phaser.CANVAS, 'game');
+    /*test를 위해 알림 횟수를 지정하려 함.(오전 8시 41분 현재 실패)*/
+    var flag_alert_cnt = 0;
 
     var PhaserGame = function (game) {
 
@@ -22,7 +24,7 @@
         this.safetile = 1;
         this.gridsize = 32;
 
-        this.speed = 150;
+        this.speed = 100;
         this.threshold = 3;
         this.turnSpeed = 150;
 
@@ -53,9 +55,13 @@
             this.load.crossOrigin = 'anonymous';
 
             this.load.tilemap('map', 'assets/maze.json', null, Phaser.Tilemap.TILED_JSON);
+            /*
+                Song's Comment.
+                -> If we want to make map into road, we should modify maze.json to simulate our situation.
+            */
             this.load.image('tiles', 'assets/tiles.png');
             this.load.image('car', 'assets/car.png');
-
+            //this.load.image('car', 'assets/car.png');
             //  Note: Graphics are Copyright 2015 Photon Storm Ltd.
 
         },
@@ -149,7 +155,9 @@
             this.move(this.turning);
 
             this.turning = Phaser.NONE;
-
+            /*방향이 바뀔 때 마다 초기화를 하려 하나 실패.*/
+            var flag_alert_cnt = 0;
+            
             return true;
 
         },
@@ -201,12 +209,15 @@
         update: function () {
           
             this.physics.arcade.collide(this.car, this.layer);
-
+            /*
+                여기가 감지범위를 표현하는 곳임.
+            */
             this.marker.x = this.math.snapToFloor(Math.floor(this.car.x), this.gridsize) / this.gridsize;
             this.marker.y = this.math.snapToFloor(Math.floor(this.car.y), this.gridsize) / this.gridsize;
 
             //  Update our grid sensors
             this.directions[1] = this.map.getTileLeft(this.layer.index, this.marker.x, this.marker.y);
+            //감지해서 알림을 주는 부분은 여기임. 근데 배가 아파서 자고 일어나서 다시 하겠음.
             this.directions[2] = this.map.getTileRight(this.layer.index, this.marker.x, this.marker.y);
             this.directions[3] = this.map.getTileAbove(this.layer.index, this.marker.x, this.marker.y);
             this.directions[4] = this.map.getTileBelow(this.layer.index, this.marker.x, this.marker.y);
@@ -224,26 +235,71 @@
 
             //  Un-comment this to see the debug drawing
 
+            /*한칸 움직일때마다 4방향을 체크해서, 거동이 가능한 곳은 초록색, 불가능한 곳은 빨간색, 현재 가고있는 방향은 회색으로 표시.*/
+
             for (var t = 1; t < 5; t++)
             {
+                /*Direction-Check part.*/
+                /*가는 방향에 따라 앞 뒤로 범위가 생성되게 하고자 하는 의도임.*/
+                /*움직이는 방향이 좌/우 일 경우, 차량의 좌 우에만 범위가 표시되게 한다.*/
+                if((this.current === 1) || (this.current === 2)){
+                    if(t >= 3){
+                        break;
+                    }
+                }
+                /*움직이는 방향이 상/하 일 경우, 차량의 상 하에만 범위가 표시되게 한다.*/
+                if((this.current === 3) || (this.current === 4)){
+                    if(t < 3){
+                        continue;
+                    }
+                }
+
                 if (this.directions[t] === null)
                 {
                     continue;
                 }
-
                 var color = 'rgba(0,255,0,0.3)';
+                /*green color.*/
 
                 if (this.directions[t].index !== this.safetile)
                 {
                     color = 'rgba(255,0,0,0.3)';
+                    /*red color*/
                 }
 
                 if (t === this.current)
                 {
                     color = 'rgba(255,255,255,0.3)';
+                    /*gray color.*/
+                    /*회피가능범위 Detection*/
+                    if(this.directions[t].index !== this.safetile) {
+                        //일정횟수이상 알람이 울리면 일단 계속 진행하기위해 알림을 멈추려 하나 실패.
+                        
+                        flag_alert_cnt++;
+                        if(flag_alert_cnt === 3){
+							window.alert("Warning! Detection something");
+							break;
+                        } else if(flag_alert_cnt > 3) {
+							this.car.tint = 0xff9999;
+							flag_alert_cnt = 3;
+						}
+                    }else {
+						flag_alert_cnt = 0;
+					}
                 }
 
-                this.game.debug.geom(new Phaser.Rectangle(this.directions[t].worldX, this.directions[t].worldY, 32, 32), color, true);
+                /*
+                    반복문을 4번 돌면서 방향에 맞는 색깔을 방향마다 칠해주는 것이다.
+                    이 때, 위에서 상하방향 인지, 좌우방향인지 나눠서 진행에 해당하는 차량의 앞뒤방향만 색칠했으며,
+                    방향마다 범위를 늘려주었다.
+                */
+                if((this.current === 1) || (this.current === 2)){
+                    this.game.debug.geom(new Phaser.Rectangle(this.directions[t].worldX, this.directions[t].worldY, 96, 32), color, true);
+                }
+                else {
+                    this.game.debug.geom(new Phaser.Rectangle(this.directions[t].worldX, this.directions[t].worldY, 32, 96), color, true);
+
+                }
             }
 
             this.game.debug.geom(this.turnPoint, '#ffff00');
