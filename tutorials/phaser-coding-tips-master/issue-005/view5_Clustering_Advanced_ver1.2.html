@@ -29,7 +29,7 @@
 				this._dist_scale = options.dist_scale || 500;
 
 				/*좌우 15도까지 클러스터로 감지하겠다.*/
-				this._angle_tole = options.angle_tole || (Math.PI / 6);
+				this._angle_tole = options.angle_tole || (7*(Math.PI / 36));
 			},
 
 			init: function() {
@@ -304,7 +304,7 @@
 				var arcDrawing_first = clusterList[i].first;
 				var arcDrawing_last = clusterList[i].last;
 				
-				/*arc addition
+				/*arc addition*/
 				var arc1 = game.add.graphics(0, 0);
 				arc1.clear();
 				arc1.lineStyle(1, 0xffffff);
@@ -323,8 +323,8 @@
 				arc2.beginFill(colorNum, 0.1);
 				arc2.arc(arcDrawing_last.sprite.x, arcDrawing_last.sprite.y,
 					clusteringNode._getDetectDst(arcDrawing_last.vel),
-					game.math.reverseAngle(arcDrawing_last.rotation) + clusteringNode._angle_tole,
-					game.math.reverseAngle(arcDrawing_last.rotation) - clusteringNode._angle_tole,
+					game.math.reverseAngle(arcDrawing_last.sprite.rotation) + clusteringNode._angle_tole,
+					game.math.reverseAngle(arcDrawing_last.sprite.rotation) - clusteringNode._angle_tole,
 					true
 				);
 				arc2.endFill();
@@ -375,8 +375,8 @@
 			var dist_scale = 500;
 
 			function getDetectDst_Danger(vel){
-				//return (Math.atan(-(Math.floor(vel / vel_div_ratio))) + (Math.PI / 2)) * dist_scale;
-				return (1 + (1/(vel+1)))*200;
+				return (Math.atan(-(Math.floor(vel / vel_div_ratio))) + (Math.PI / 2)) * dist_scale;
+				//return (1 + (1/(vel+1)))*200;
 			}
 
 			for(var i=0; i<count_clusterList; i++){
