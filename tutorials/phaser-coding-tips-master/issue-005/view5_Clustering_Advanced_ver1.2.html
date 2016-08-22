@@ -236,7 +236,7 @@
 					'car'
 				);
 				sprite.anchor.setTo(0.5, 0.5);
-				sprite.angle = game.rnd.integerInRange(-70, -110);
+				sprite.angle = game.rnd.integerInRange(-80, -100);
 				vehicle.sprite = sprite;
 				
 				vehicle.name = 'Car' + i;
@@ -260,7 +260,7 @@
 		/*option <- game, dist_scale*/
 		var clusteringNode = new ClusteringNode(vehicle_list, {
 			game: game,
-			dist_scale: 300
+			dist_scale: 500
 		});
 
 		var style = {
@@ -305,17 +305,19 @@
 				var arcDrawing_last = clusterList[i].last;
 				
 				/*arc addition*/
+				
 				var arc1 = game.add.graphics(0, 0);
 				arc1.clear();
 				arc1.lineStyle(1, 0xffffff);
 				arc1.beginFill(colorNum, 0.1);
 				arc1.arc(arcDrawing_first.sprite.x, arcDrawing_first.sprite.y,
 					clusteringNode._getDetectDst(arcDrawing_first.vel),
-					arcDrawing_first.rotation + clusteringNode._angle_tole,
-					arcDrawing_first.rotation - clusteringNode._angle_tole,
+					arcDrawing_first.sprite.rotation + clusteringNode._angle_tole,
+					arcDrawing_first.sprite.rotation - clusteringNode._angle_tole,
 					true
 				);
 				arc1.endFill();
+				
 
 				var arc2 = game.add.graphics(0, 0);
 				arc2.clear();
@@ -422,6 +424,42 @@
 	<script>
 		function isEffectivePosition(killer, victim){
 			/*Must be use function : angleBetween*/
+			var vel_div_ratio = 10;
+			var dist_scale = 500;
+			function getDetectDst_Danger(vel){
+				return (Math.atan(-(Math.floor(vel / vel_div_ratio))) + (Math.PI / 2)) * dist_scale;
+				//return (1 + (1/(vel+1)))*200;
+			}
+			var diff = game.physics.arcade.angleBetween(killer.sprite, victim.sprite);
+			
+			if(Math.abs(victim.sprite.rotation - diff) < Math.PI * (7 / 36) ) {
+				if(Math.abs(killer.sprite.rotation - diff) < 0.174533 ) {
+					if(killer.vel <= victim.vel){
+						return false;
+					}
+					/*
+					var test_safe_dist = game.physics.arcade.distanceBetween(killer.sprite, victim.sprite);
+					var avoid_dist_killer = getDetectDst_Danger(killer.vel);
+					if(test_safe_dist < avoid_dist_killer){
+						var diff2 = game.physics.arcade.angleBetween(victim.sprite, killer.sprite)
+						
+						if(Math.abs(killer.sprite.rotation - diff2) < Math.PI*(7/36)){
+							return false;
+						}
+					}
+					*/
+					/*
+					if() {
+						return true;
+					}
+					*/
+					return true;
+				}
+			}
+			return false;
+			
+			
+			/*
 			var killer_xPos = killer.sprite.x;
 			var killer_yPos = killer.sprite.y;
 			var victim_xPos = victim.sprite.x;
@@ -442,6 +480,10 @@
 					if(killer.vel <= victim.vel){
 						return false;
 					}
+					else if (Math.abs(diffVectorAngle-(-victim_angle))<10){
+						return true;
+					}
+					
 					return true;
 				}
 				return false;
@@ -449,6 +491,7 @@
 			else{
 				return false;
 			}
+			*/
 		}
 		function normalizeDegree(angleDeg) {
 			var mod_angle = angleDeg % 360;
