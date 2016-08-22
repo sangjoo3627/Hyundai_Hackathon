@@ -15,10 +15,10 @@
 			this.danger_cluster_list = [];
 			
 			// 도로에서 center로 향하는 방향 각도 (사거리)
-			this.angle1 = 180;		//서
-			this.angle2 = -90;		//북
-			this.angle3 = 0;		//동
-			this.angle4 = 90;		//남
+			this.angle1 = 180;		//서쪽 가리키는
+			this.angle2 = -90;		//북쪽 가리키는
+			this.angle3 = 0;		//동쪽 가리키는
+			this.angle4 = 90;		//남쪽 가리키는
 			
 			// 각 도로들(사거리) 내에 존재하는 cluster를 담는 list
 			this.road1 = [];
@@ -38,42 +38,50 @@
 			// center에서 4가지 방향의 도로 정지선까지의 거리
 			this.stopline = 50;
 			
+			// 교차로에 진입하는 cluster를 감지하고 위험요소를 판단하는 함수
 			this.check_cluster = function (){
 				// cluster 하나씩 꺼내 교차로 내 존재하는지 판단
 				for(var i=0; i<this.cluster_num; i++){
 					var checked_cluster = this.cluster_list[i];
 					var test_distance = game.physics.arcade.distanceBetween(this.center, checked_cluster.first.sprite);
+					var danger_vel = 70;
 					
 					// 해당 cluster가 center의 범위내에 닿았을 때 road_list에 담고 신호등 체크
 					if(test_distance <= this.center_dist)
 					{
+						// 진입하는 cluster의 방향 각도
 						var test_angle = convertToDegree(normalizeRadian(checked_cluster.first.sprite.rotation));
 						
+						// road1 (동쪽에서 진입)하는 방향이고 road1의 정지선 전에 존재하는 cluster일 경우
 						if(test_angle == this.angle1 && ((this.center.x+this.stopline)<=checked_cluster.first.sprite.x))
 						{
 							this.road1.push(checked_cluster);
-							if(checked_cluster.first.vel > 70){
+							// 빨간불이고 정지선 부근임에도 일정 속도 이상 내고 있을 경우 위험 요소 리스트에 넣음
+							if((this.signal1 == 0) && (checked_cluster.first.vel > danger_vel)){
 								this.danger_cluster_list.push(checked_cluster);
 							}
 						}
+						// road2 (남쪽에서 진입)하는 방향이고 road2의 정지선 전에 존재하는 cluster일 경우
 						else if(test_angle == this.angle2 && ((this.center.y+this.stopline)<=checked_cluster.first.sprite.y))
 						{
 							this.road2.push(checked_cluster);
-							if(checked_cluster.first.vel > 70){
+							if((this.signal2 == 0) && (checked_cluster.first.vel > danger_vel)){
 								this.danger_cluster_list.push(checked_cluster);
 							}
 						}
+						// road3 (서쪽에서 진입)하는 방향이고 road3의 정지선 전에 존재하는 cluster일 경우
 						else if(test_angle == this.angle3 && ((this.center.x-this.stopline)>=checked_cluster.first.sprite.x))
 						{
 							this.road3.push(checked_cluster);
-							if(checked_cluster.first.vel > 70){
+							if((this.signal3 == 0) && (checked_cluster.first.vel > danger_vel)){
 								this.danger_cluster_list.push(checked_cluster);
 							}
 						}
+						// road4 (북쪽에서 진입)하는 방향이고 road4의 정지선 전에 존재하는 cluster일 경우
 						else if(test_angle == this.angle4 && ((this.center.y-this.stopline)>=checked_cluster.first.sprite.y))
 						{
 							this.road4.push(checked_cluster);
-							if(checked_cluster.first.vel > 70){
+							if((this.signal4 == 0) && (checked_cluster.first.vel > danger_vel)){
 								this.danger_cluster_list.push(checked_cluster);
 							}
 						}
