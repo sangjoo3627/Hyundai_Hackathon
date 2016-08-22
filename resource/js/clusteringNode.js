@@ -1,22 +1,16 @@
-
-function ClusteringNode(vehicle_list, options) {
+function ClusteringNode(options) {
 	this._$init.apply(this, arguments);
 }
 
 ClusteringNode.prototype = {
-	_$init: function(vehicle_list, options) {
-		this._vehicle_list = vehicle_list;
+	_$init: function(options) {
 		this._cluster_list = [];
 		this._cluster_num = 0;
 
 		if(options == undefined) {
 			options = {};
-		}				
-		this._game = options.game || new Phaser.Game(0, 0, Phaser.Auto, '', {
-			preload: function() {},
-			create: function() {},
-			update: function() {}
-		});
+		}			
+		this._vehicle_list = options.vehicle_list || [];
 		this._vel_div_ratio = options.vel_div_ratio || 10;
 		// scale factor times 5
 		this._dist_scale = options.dist_scale || 5;
@@ -121,7 +115,7 @@ ClusteringNode.prototype = {
 
 		var src_dst = this._getDetectDst(src.vel);
 		var trgt_dst = this._getDetectDst(trgt.vel);
-		var bet_dst = this._game.physics.arcade.distanceBetween(src_sprite, trgt_sprite);
+		var bet_dst = distanceBetween(src_sprite, trgt_sprite);
 
 		//console.log('dst: ' + src_dst + ' / ' + trgt_dst +' / ' + bet_dst);
 
@@ -131,7 +125,7 @@ ClusteringNode.prototype = {
 
 		var src_rot = src_sprite.rotation;
 		var trgt_rot = trgt_sprite.rotation;
-		var bet_rot = this._game.physics.arcade.angleBetween(src_sprite, trgt_sprite);
+		var bet_rot = angleBetween(src_sprite, trgt_sprite);
 		var src_vel = src.vel;
 
 		//console.log('rot: ' + src_rot + ' / ' + trgt_rot + ' / ' + bet_rot);
@@ -155,7 +149,7 @@ ClusteringNode.prototype = {
 			return 'false';
 		}
 
-		var rev_bet_rot = this._game.math.reverseAngle(bet_rot);
+		var rev_bet_rot = reverseAngle(bet_rot);
 
 		if(this._isParallel(src_rot, bet_rot, src_vel)) {
 			if(this._isParallel(trgt_rot, bet_rot, src_vel)) {
@@ -181,7 +175,7 @@ ClusteringNode.prototype = {
 	},
 
 	_isParallel: function(angle1, angle2, vel) {
-		var diff = this._game.math.normalizeAngle(angle1 - angle2);
+		var diff = normalizeAngle(angle1 - angle2);
 		var angle_tole = this._getAngleTole(vel)
 
 		if(diff < angle_tole || diff > (Math.PI * 2 - angle_tole)) {

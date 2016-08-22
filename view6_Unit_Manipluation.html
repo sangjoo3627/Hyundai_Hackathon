@@ -4,9 +4,9 @@
 		<title>Unit Manipulation</title>
 		<script type="text/javascript" src="resource/js/jquery-3.1.0.min.js"></script>
 		<script type="text/javascript" src="resource/js/phaser.min.js"></script>
-		<script type="text/javascript" src="resource/js/randomColor.js"></script>
 		
 		<script type="text/javascript" src="resource/js/clusteringNode.js"></script>
+		<script type="text/javascript" src="resource/js/drivingDangerDetectNode.js"></script>
 		
 		<script type="text/javascript" src="resource/js/util.js"></script>
 	</head>
@@ -16,7 +16,8 @@
 		<div id="setting_holder">
 			<button onclick="addVehicle()">ADD</button>
 			<button onclick="deleteVehicle()">DELETE</button>
-			<button onclick="cluster()">CLUSTER</button>
+			<button onclick="startInterval()">START</button>
+			<button onclick="endInterval()">END</button>
 			
 			
 			<form id="config">
@@ -32,25 +33,6 @@
 	
 	<script>
 		/*
-		 * Random Coloring
-		 */
-		function randomColorToHex(options) {
-			var code = randomColor(options);
-
-			if(code.constructor == Array) {
-				var temp = [];
-				for(i in code) {
-					temp.push(parseInt('0x' + code[i].substring(1), 16));
-				}
-				return temp;
-			} else {
-				return parseInt('0x' + code.substring(1), 16)
-			}
-		}
-	</script>
-
-	<script>
-		/*
 		 *	Phaser Game Initialization
 		 */ 
 		var screen_width = 500;
@@ -61,13 +43,15 @@
 		
 		var selected_vehicle = {};
 		var detect_arc;
+		var cluster_area;
 		var form = 	$('form#config');
 		
 		
 		var game = new Phaser.Game(screen_width, screen_height, Phaser.AUTO, 'viewport', {
 			preload: preload,
 			create: create,
-			update: update
+			update: update,
+			render: render
 		});
 		
 		function preload() {
@@ -83,15 +67,65 @@
 			game.input.mouse.mouseDownCallback = mouseDown;
 			
 			detect_arc = game.add.graphics(0, 0);
+			cluster_area = game.add.graphics(0, 0);
 		}
 
 		function update() {
-			updateDetectArc();
+			
 		}
 		
-		var clusteringNode = new ClusteringNode();
+		function render() {
+			updateDetectArc();
+			updateClusterArea();
+		}
 	</script>
-
+	
+	<script>
+		/*
+		 *	Worker & Intervals
+		 */
+		var clusteringNode = new ClusteringNode();;
+		var drivingDangerDetectNode = new DrivingDangerDetectNode();
+		
+		drivingDangerDetectNode.transfer = function(victim_cluster, killer_cluster, degree) {
+			window.dispatchEvent(new CustomEvent('driving_'+degree, {
+				victim_cluster: victim_cluster, killer_cluster: killer_cluster
+			}));
+		}
+		
+		var interval = null;
+		
+		function startInterval() {
+			if(interval == null) {					
+				interval = setInterval(function(){
+					console.log('Interval');
+					clusteringNode.setVehicleList(vehicle_list);
+					clusteringNode.cluster();
+					cluster_list = clusteringNode.getClusterList();
+					vehicle_list = clusteringNode.getVehicleList();
+					
+					console.log('drivingDangerDetectNode');
+					drivingDangerDetectNode.setClusterList(cluster_list);
+					drivingDangerDetectNode.detect();
+				}, 3000);
+			}
+		}
+		
+		function endInterval() {
+			clearInterval(interval);
+		}
+	</script>
+	
+	<script>
+		window.addEventListener('driving_caution', function(e){
+			console.log('driving_caution');
+		});
+		
+		window.addEventListener('driving_danger', function(e){
+			console.log('driving_danger');
+		});
+	</script>
+	
 	<script>
 		/*
 		 * Phaser Mouse Event Handler
@@ -181,6 +215,24 @@
 				detect_arc.endFill();
 			}			
 		}
+		
+		function updateClusterArea() {
+			cluster_area.clear();
+			
+			if(selected_vehicle.sprite != null && selected_vehicle.cluster != -1) {
+				var vehicle_list = cluster_list[selected_vehicle.cluster].vehicle_list;
+				
+				cluster_area.lineStyle(1, 0xffffff);
+				cluster_area.beginFill(0xFFCC00, 0.7);
+				
+				for(i in vehicle_list) {
+					var sprite = vehicle_list[i].sprite;
+					cluster_area.drawCircle(sprite.x, sprite.y, 30);
+				}
+				
+				cluster_area.endFill();				
+			}
+		}
 	</script>
 
 	<script>
@@ -245,6 +297,7 @@
 
 			added.vel = 0;
 			added.name = added_sprite.name;
+			added.cluster = -1;
 
 			vehicle_list.push(added);
 		}
@@ -296,17 +349,5 @@
 			selected_vehicle.name = name;
 			selected_vehicle.vel = vel;
 		}
-	</script>
-	
-	<script>
-		/*
-		 * Cluster
-		 */
-		 function cluster() {
-			clusteringNode.setVehicleList(vehicle_list);
-			clusteringNode.cluster();
-			vehicle_list = clusteringNode.getVehicleList();
-			cluster_list = clusteringNode.getClusterList();
-		 }
 	</script>
 </html>

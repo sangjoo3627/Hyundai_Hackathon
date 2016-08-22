@@ -1,3 +1,48 @@
+
+
+/*
+ * Phaser Utils
+ */
+function angleBetween(source, target, world) {
+
+	if (world === undefined) { world = false; }
+
+	if (world)
+	{
+		return Math.atan2(target.world.y - source.world.y, target.world.x - source.world.x);
+	}
+	else
+	{
+		return Math.atan2(target.y - source.y, target.x - source.x);
+	}
+
+}
+	
+function distanceBetween(source, target, world) {
+
+	if (world === undefined) { world = false; }
+
+	var dx = (world) ? source.world.x - target.world.x : source.x - target.x;
+	var dy = (world) ? source.world.y - target.world.y : source.y - target.y;
+
+	return Math.sqrt(dx * dx + dy * dy);
+
+}
+	
+	
+function normalizeAngle(angleRad) {
+
+	angleRad = angleRad % (2 * Math.PI);
+	return angleRad >= 0 ? angleRad : angleRad + 2 * Math.PI;
+
+}
+
+function reverseAngle(angleRad) {
+
+	return this.normalizeAngle(angleRad + Math.PI, true);
+
+}
+
 /*
  * Angle Manipulators
  * 	degree and radians
