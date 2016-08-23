@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Unit Manipulation</title>
+		<script type="text/javascript" src="resource/js/jquery-3.1.0.min.js"></script>
+		<script type="text/javascript" src="resource/js/phaser.min.js"></script>
+		
+		<script type="text/javascript" src="resource/js/clusteringNode.js"></script>
+		<script type="text/javascript" src="resource/js/drivingDangerDetectNode.js"></script>
+		<script type="text/javascript" src="resource/js/intersectionDangerDetectNode.js"></script>
+		
+		<script type="text/javascript" src="resource/js/util.js"></script>
+	</head>
+
+	<body>
+		<div id="viewport"></div>
+		<div id="setting_holder">
+			<button onclick="addVehicle()">ADD</button>
+			<button onclick="addCenter()">CENTER</button>
+			<button onclick="deleteVehicle()">DELETE</button>
+			<button onclick="startInterval()">START</button>
+			<button onclick="endInterval()">END</button>
+			
+			
+			<form id="config">
+				<input name="veh_name" type="text" />
+				<input name="pos_x" type="number" />
+				<input name="pos_y" type="number" />
+				<input name="vel" type="number" min="0" max="150" />
+				<input name="angle" type="number" />
+				<input type="button" value="change" onclick="changeVehicleProperty()" />
+			</form>
+		</div>
+	</body>
+	
+	<script>
+		/*
+		 *	Phaser Game Initialization
+		 */
+		var phase = 0;
+		var screen_width = 500;
+		var screen_height = 600;
+		var vehicle_num = 0;
+		var vehicle_list = [];
+		var cluster_list = [];
+		
+		var center = null;
+		var signal = [3, 0, 0, 0];
+		
+		var selected_vehicle = {};
+		var detect_arc;
+		var cluster_area;
+		var intersection_area;
+		var driving_caution_point;
+		var driving_danger_point;
+		var intersection_danger_point;
+		var form = 	$('form#config');
+		
+		
+		var game = new Phaser.Game(screen_width, screen_height, Phaser.AUTO, 'viewport', {
+			preload: preload,
+			create: create,
+			update: update,
+			render: render
+		});
+		
+		function preload() {
+			var assetFolderDir = 'resource/assets/';
+			game.load.image('star', assetFolderDir + 'star.png');
+			game.load.image('car', assetFolderDir + 'car90.png');
+			game.load.image('dot', assetFolderDir + 'dot.png');
+		}
+
+		function create() {
+			game.stage.backgroundColor = '#99FF00';
+
+			game.input.mouse.mouseWheelCallback = mouseWheel;
+			game.input.mouse.mouseDownCallback = mouseDown;
+			
+			detect_arc = game.add.graphics(0, 0);
+			cluster_area = game.add.graphics(0, 0);
+			intersection_area = game.add.graphics(0, 0);
+			
+			driving_caution_point = game.add.graphics(0, 0);
+			driving_danger_point = game.add.graphics(0, 0);
+			intersection_danger_point = game.add.graphics(0, 0);
+		}
+
+		function update() {
+			
+		}
+		
+		function render() {
+			updateDetectArc();
+			updateClusterArea();
+			printText();
+		}
+	</script>
+	
+	<script>
+		/*
+		 *	Worker & Intervals
+		 */
+		var clusteringNode = new ClusteringNode();;
+		var drivingDangerDetectNode = new DrivingDangerDetectNode();
+		var intersectionDangerDetectNode = new IntersectionDangerDetectNode({
+			signal: signal,
+			angle: [Math.PI, -(Math.PI / 2), 0, Math.PI / 2]
+		});
+		
+		drivingDangerDetectNode.transfer = function(victim_cluster, killer_cluster, degree) {
+			// console.log(victim_cluster);
+			window.dispatchEvent(new CustomEvent('driving_'+degree, {
+				detail:{
+					victim_cluster: victim_cluster,
+					killer_cluster: killer_cluster
+				}
+			}));
+		};
+		intersectionDangerDetectNode.transfer = function(victim_cluster, killer_cluster, degree) {
+			// console.log(victim_cluster);
+			window.dispatchEvent(new CustomEvent('intersection_'+degree, {
+				detail:{
+					victim_cluster: victim_cluster,
+					killer_cluster: killer_cluster
+				}
+			}));
+		};
+		
+		
+		var interval = null;
+		
+		function startInterval() {					
+			interval = setInterval(function(){
+				console.log('Phase #' + phase);
+				phase ++;
+				
+				// console.log('Interval');
+				clusteringNode.setVehicleList(vehicle_list);
+				clusteringNode.cluster();
+				cluster_list = clusteringNode.getClusterList();
+				vehicle_list = clusteringNode.getVehicleList();
+				
+				// console.log('drivingDangerDetectNode');
+				drivingDangerDetectNode.setClusterList(cluster_list);
+				drivingDangerDetectNode.detect();
+				
+				// console.log('intersectionDangerDetectNode');
+				intersectionDangerDetectNode.init();
+				intersectionDangerDetectNode.setClusterList(cluster_list);
+				intersectionDangerDetectNode.setSignal(signal);
+				intersectionDangerDetectNode.detect();
+				
+
+			}, 3000);
+		}
+		
+		function endInterval() {
+			phase = 0;
+			clearInterval(interval);
+		}
+		
+		function printText() {
+			var name_style = {
+				font: '12px Courier',
+				fill: '#ffffff'
+			}
+			for(i in vehicle_list) {
+				var vehicle = vehicle_list[i];
+			
+				vehicle.name_text.text = vehicle.name + '(' + vehicle.vel + ')';
+				vehicle.name_text.alignTo(vehicle.sprite, Phaser.RIGHT_TOP, 5);
+				vehicle.cluster_text.text = 'C: '+ vehicle.cluster;
+				vehicle.cluster_text.alignTo(vehicle.sprite, Phaser.LEFT_TOP, 5);
+				
+				var text = '';
+				if(vehicle.is_driving_caution_victim) {
+					text += 'D: C ';
+				} else if (vehicle.is_driving_danger_victim) {
+					text += 'D: D ';
+				}
+				if(vehicle.is_intersection_danger_victim) {
+					text += 'I: D';
+				}
+				vehicle.victim_text.text = text;
+				vehicle.victim_text.alignTo(vehicle.sprite, Phaser.TOP_CENTER, 5);
+				
+				text = '';
+				if(vehicle.is_driving_caution_killer) {
+					text += 'D: C ';
+				} else if (vehicle.is_driving_danger_killer) {
+					text += 'D: D ';
+				}
+				if(vehicle.is_intersection_danger_killer) {
+					text += 'I: D';
+				}
+				vehicle.killer_text.text = text;
+				vehicle.killer_text.alignTo(vehicle.sprite, Phaser.BOTTOM_CENTER, 5);
+			}
+		}
+	</script>
+	
+	<script>
+		window.addEventListener('driving_caution', function(e){
+			setVehicleCond(e.detail.victim_cluster, e.detail.killer_cluster, 'driving_caution');
+			console.log('Driving Caution! ' + e.detail.killer_cluster.first.cluster + ' Cluster -> ' + e.detail.victim_cluster.last.cluster + ' Cluster');
+ 		});
+		
+		window.addEventListener('driving_danger', function(e){
+			setVehicleCond(e.detail.victim_cluster, e.detail.killer_cluster, 'driving_danger');
+			console.log('Driving Danger! ' + e.detail.killer_cluster.first.cluster + ' Cluster -> ' + e.detail.victim_cluster.last.cluster + ' Cluster');
+		});
+		
+		window.addEventListener('intersection_danger', function(e) {
+			setVehicleCond(e.detail.victim_cluster, e.detail.killer_cluster, 'intersection_danger');
+			console.log('Intersection Danger! ' + e.detail.killer_cluster.first.cluster + ' Cluster -> ' + e.detail.victim_cluster.last.cluster + ' Cluster');
+		});
+		
+		function setVehicleCond(victim_cluster, killer_cluster, event_name) {
+			if(event_name == 'driving_caution') {
+				property_name_victim = 'is_driving_caution_victim';
+				property_name_killer = 'is_driving_caution_killer';
+			} else if (event_name == 'driving_danger') {
+				property_name_victim = 'is_driving_danger_victim';
+				property_name_killer = 'is_driving_danger_killer';
+			} else if (event_name == 'intersection_danger') {
+				property_name_victim = 'is_intersection_danger_victim';
+				property_name_killer = 'is_intersection_danger_killer';
+			}
+			
+			for(i in victim_cluster.vehicle_list) {
+				victim_cluster.vehicle_list[i][property_name_victim] = true;
+			}
+			
+			for(i in killer_cluster.vehicle_list) {
+				killer_cluster.vehicle_list[i][property_name_killer] = true;
+			}
+		}
+		
+	</script>
+	
+	<script>
+		/*
+		 * Phaser Mouse Event Handler
+		 */
+		function mouseDown(event) {
+			var target_object = game.input.activePointer.targetObject;
+
+			if(target_object == null) {
+				if(selected_vehicle.sprite != null) {
+					selected_vehicle.sprite.tint = 0xffffff;
+					selected_vehicle = {};
+					resetConfig();
+				}
+			} else {
+				if (selected_vehicle.sprite == null) {
+					selectVehicle(target_object.sprite);
+
+				} else if(target_object.sprite != selected_vehicle.sprite) {
+					selected_vehicle.sprite.tint = 0xffffff;
+					selectVehicle(target_object.sprite);
+				}
+			}
+		}
+
+		function mouseWheel(event) {
+			if(selected_vehicle.sprite != null) {
+				selected_vehicle.sprite.angle += game.input.mouse.wheelDelta * 5;
+				
+				setConfig({
+					angle: convertToDegree(selected_vehicle.sprite.rotation)
+				});
+			}
+		}
+
+		function updateVehiclePos(sprite) {
+			setConfig({
+				pos_x: sprite.x,
+				pos_y: sprite.y
+			});
+		}	
+
+		function selectVehicle(sprite) {
+			sprite.tint = 0x99ff99;
+
+			selected_vehicle = findVehicle(sprite);
+
+			setConfig({
+				veh_name: selected_vehicle.name,
+				vel: selected_vehicle.vel,
+				angle: convertToDegree(selected_vehicle.sprite.rotation)
+			});
+		}
+		
+		function findVehicle(sprite) {
+			var found = $.grep(vehicle_list, function(e) {
+				return e.name == sprite.name;
+			});
+
+			if(found.length == 0) {
+				return null;
+			} else {
+				return found[0];
+			}
+		}
+		
+		function updateDetectArc() {
+			detect_arc.clear();
+			
+			if(selected_vehicle.sprite != null) {
+				vehicle = selected_vehicle;
+				sprite = vehicle.sprite;
+				
+				detect_arc.lineStyle(1, 0xffffff);
+				detect_arc.beginFill(0xCC0000, 0.9);
+				detect_arc.arc(sprite.x, sprite.y,
+					clusteringNode._getDetectDst(vehicle.vel),
+					sprite.rotation + clusteringNode._getAngleTole(vehicle.vel),
+					sprite.rotation - clusteringNode._getAngleTole(vehicle.vel),
+					true
+				);
+				detect_arc.arc(sprite.x, sprite.y,
+					clusteringNode._getDetectDst(vehicle.vel),
+					game.math.reverseAngle(sprite.rotation) + clusteringNode._getAngleTole(vehicle.vel),
+					game.math.reverseAngle(sprite.rotation) - clusteringNode._getAngleTole(vehicle.vel),
+					true
+				);
+				detect_arc.endFill();
+			}			
+		}
+		
+		function updateClusterArea() {
+			cluster_area.clear();
+			
+			if(selected_vehicle.sprite != null && selected_vehicle.cluster != -1) {
+				var vehicle_list = cluster_list[selected_vehicle.cluster].vehicle_list;
+				
+				cluster_area.lineStyle(1, 0xffffff);
+				cluster_area.beginFill(0xFFCC00, 0.7);
+				
+				for(i in vehicle_list) {
+					var sprite = vehicle_list[i].sprite;
+					cluster_area.drawCircle(sprite.x, sprite.y, 30);
+				}
+				
+				cluster_area.endFill();				
+			}
+		}
+		
+		function updateDrivingCautionPoint() {
+			
+		}
+		
+		function updateDrivingDangerPoint() {
+			
+		}
+		
+		function updateIntersectionDangerPoint() {
+		
+		}
+	</script>
+
+	<script>
+		/*
+		 * Configuration getter setter
+		 */		
+		function getConfig() {
+			var veh_name = form.find('[name=veh_name]').val();
+			var pos_x = form.find('[name=pos_x]').val();
+			var pos_y = form.find('[name=pos_y]').val();
+			var vel = form.find('[name=vel]').val();
+			var angle = form.find('[name=angle]').val();
+		
+			return {
+				veh_name: veh_name,
+				pos_x: pos_x,
+				pos_y: pos_y,
+				vel: vel,
+				angle: angle
+			};
+		}
+		
+		function setConfig(new_config) {
+			if(new_config.veh_name != null)
+				form.find('[name=veh_name]').val(new_config.veh_name);
+			if(new_config.pos_x != null)
+				form.find('[name=pos_x]').val(new_config.pos_x);
+			if(new_config.pos_y != null)
+				form.find('[name=pos_y]').val(new_config.pos_y);
+			if(new_config.vel != null)
+				form.find('[name=vel]').val(new_config.vel);
+			if(new_config.angle != null)
+				form.find('[name=angle]').val(new_config.angle);
+			
+		}
+		
+		function resetConfig() {
+			form.trigger('reset');
+		}
+	</script>
+	
+	<script>
+		/*
+		 * Add Vehicle
+		 */
+		function addVehicle() {
+			var added = {};
+
+			var added_sprite = game.add.sprite(game.world.centerX, game.world.centerY, 'car');
+			added_sprite.name = 'Car ' + vehicle_num;
+			vehicle_num ++;
+			added_sprite.anchor.setTo(0.5, 0.5);
+			added_sprite.angle = -90;
+
+			added_sprite.inputEnabled = true;
+			added_sprite.input.enableDrag(true);
+			// added_sprite.input.enableSnap(16, 16, false, true);
+			
+			added_sprite.events.onDragUpdate.add(updateVehiclePos, this);
+			
+			added.sprite = added_sprite;
+
+			added.vel = 0;
+			added.name = added_sprite.name;
+			added.cluster = -1;
+			
+			added.is_driving_caution_victim = false;
+			added.is_driving_danger_victim = false;
+			added.is_intersection_danger_victim = false;
+			added.is_driving_caution_killer = false;
+			added.is_driving_danger_killer = false;
+			added.is_intersection_danger_killer = false;
+			
+			added.name_text = game.add.text(0, 0, '',{
+				font: '12px Courier',
+				fill: '#000000'
+			});
+			
+			added.cluster_text = game.add.text(0, 0, '', {
+				font: '12px Courier',
+				fill: '#000000'
+			});
+			
+			added.victim_text = game.add.text(0, 0, '', {
+				font: '12px Courier',
+				fill: '#0000ff'
+			});
+			
+			added.killer_text = game.add.text(0, 0, '', {
+				font: '12px Courier',
+				fill: '#ff0000'
+			});
+
+			vehicle_list.push(added);
+		}
+	</script>
+	
+	<script>
+		/*
+		 *	Add Center
+		 */ 
+		 function addCenter() {
+			if(center == null) {
+				center = game.add.sprite(game.world.centerX, game.world.centerY, 'dot');
+				
+				stop_line = 50;
+				
+				intersection_area.clear();
+				intersection_area.lineStyle(1, 0xeaeaea);
+				intersection_area.beginFill(8, 0.2);
+				intersection_area.drawCircle(center.x, center.y, 400);
+				intersection_area.drawRect(center.x - stop_line, center.y - stop_line, stop_line * 2, stop_line * 2);
+				intersection_area.drawRect(center.x - screen_width / 2, center.y - stop_line, screen_width, stop_line * 2);
+				intersection_area.drawRect(center.x - stop_line, center.y - screen_height / 2, stop_line * 2, screen_height);
+				intersection_area.endFill();
+				
+				intersectionDangerDetectNode.setCenter(center);
+			}
+		}
+	
+	</script>
+	
+	<script>
+		/*
+		 * Delete Vehicle
+		 */
+		function deleteVehicle() {	
+			var deleted_sprite = selected_vehicle.sprite;
+			
+			if(deleted_sprite == null) {
+				// console.log('Nothing Selected');
+				return;
+			}
+			
+			for(i in vehicle_list) {
+				if(vehicle_list[i] == selected_vehicle) {
+					vehicle_list.splice(i, 1);
+				}
+			}
+			
+			deleted_sprite.destroy();
+			selected_vehicle = {};
+			resetConfig();
+		}
+	</script>
+	
+	<script>
+		/*
+		 * Form Submit Change Vehicle Property
+		 */
+		function changeVehicleProperty() {
+			var config = getConfig();
+			
+			var name = config.veh_name;
+			var x = parseInt(config.pos_x);
+			var y = parseInt(config.pos_y);
+			var vel = parseInt(config.vel);
+			var angle = parseInt(config.angle);
+			var rot = convertToRadian(angle);
+
+			selected_vehicle.sprite.name = name;
+			selected_vehicle.sprite.x = x;
+			selected_vehicle.sprite.y = y;
+			selected_vehicle.sprite.rotation = rot;
+
+			selected_vehicle.name = name;
+			selected_vehicle.vel = vel;
+		}
+	</script>
+	
+</html>
