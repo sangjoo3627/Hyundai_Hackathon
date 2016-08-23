@@ -95,7 +95,7 @@ ClusteringNode.prototype = {
 				var switch_pos = this._satisfy(vehicle_list[i], vehicle)
 
 				if(switch_pos != 'false') {
-					console.log(vehicle.name + ' - ' + vehicle_list[i].name);
+					//console.log(vehicle.name + ' - ' + vehicle_list[i].name);
 
 					vehicle_list[i].cluster = cluster_num;
 					cluster_list[cluster_num].vehicle_list.push(vehicle_list[i]);
