@@ -15,23 +15,14 @@
 			this.danger_cluster_list = [];
 			
 			// 도로에서 center로 향하는 방향 각도 (사거리)
-			this.angle1 = 180;		//서쪽 가리키는
-			this.angle2 = -90;		//북쪽 가리키는
-			this.angle3 = 0;		//동쪽 가리키는
-			this.angle4 = 90;		//남쪽 가리키는
-			
+			this.angle = [180, -90, 0, 90];
+
 			// 각 도로들(사거리) 내에 존재하는 cluster를 담는 list
-			this.road1 = [];
-			this.road2 = [];
-			this.road3 = [];
-			this.road4 = [];
-			
+			this.road = [[],[],[],[]];
+
 			// 신호등 정보
 			// 0(정지), 1(직진), 2(좌회전), 3(직진,좌회전)
-			this.signal1 = 3;		// 1번 도로만 직진,좌회전 신호일떄를 가정
-			this.signal2 = 0;
-			this.signal3 = 0;
-			this.signal4 = 0;
+			this.signal = [3,0,0,0];
 			
 			// center에서 진입하는 cluster까지의 감지 범위
 			this.center_dist = 200;
@@ -52,37 +43,15 @@
 						// 진입하는 cluster의 방향 각도
 						var test_angle = convertToDegree(normalizeRadian(checked_cluster.first.sprite.rotation));
 						
-						// road1 (동쪽에서 진입)하는 방향이고 road1의 정지선 전에 존재하는 cluster일 경우
-						if(test_angle == this.angle1 && ((this.center.x+this.stopline)<=checked_cluster.first.sprite.x))
-						{
-							this.road1.push(checked_cluster);
-							// 빨간불이고 정지선 부근임에도 일정 속도 이상 내고 있을 경우 위험 요소 리스트에 넣음
-							if((this.signal1 == 0) && (checked_cluster.first.vel > danger_vel)){
-								this.danger_cluster_list.push(checked_cluster);
-							}
-						}
-						// road2 (남쪽에서 진입)하는 방향이고 road2의 정지선 전에 존재하는 cluster일 경우
-						else if(test_angle == this.angle2 && ((this.center.y+this.stopline)<=checked_cluster.first.sprite.y))
-						{
-							this.road2.push(checked_cluster);
-							if((this.signal2 == 0) && (checked_cluster.first.vel > da nger_vel)){
-								this.danger_cluster_list.push(checked_cluster);
-							}
-						}
-						// road3 (서쪽에서 진입)하는 방향이고 road3의 정지선 전에 존재하는 cluster일 경우
-						else if(test_angle == this.angle3 && ((this.center.x-this.stopline)>=checked_cluster.first.sprite.x))
-						{
-							this.road3.push(checked_cluster);
-							if((this.signal3 == 0) && (checked_cluster.first.vel > danger_vel)){
-								this.danger_cluster_list.push(checked_cluster);
-							}
-						}
-						// road4 (북쪽에서 진입)하는 방향이고 road4의 정지선 전에 존재하는 cluster일 경우
-						else if(test_angle == this.angle4 && ((this.center.y-this.stopline)>=checked_cluster.first.sprite.y))
-						{
-							this.road4.push(checked_cluster);
-							if((this.signal4 == 0) && (checked_cluster.first.vel > danger_vel)){
-								this.danger_cluster_list.push(checked_cluster);
+						for(var j=0; j<4; j++){
+							var angle_bet = convertToDegree(normalizeRadian(game.physics.arcade.angleBetween(checked_cluster.first.sprite, this.center)));
+							// road로 진입하는 방향이고 정지선 전에 존재하는 cluster일 경우
+							if(test_angle == this.angle[j] && (angle_bet >= test_angle-90) && (angle_bet <= test_angle+90)){
+								this.road[j].push(checked_cluster);
+								// 빨간불이고 정지선 부근임에도 일정 속도 이상 내고 있을 경우 위험 요소 리스트에 넣음
+								if((this.signal[j] == 0) && (checked_cluster.first.vel > danger_vel)){
+									this.danger_cluster_list.push(checked_cluster);
+								}
 							}
 						}
 					}
@@ -90,13 +59,13 @@
 				
 				// danger_list에 무언가 들어있을때 (위험 차량이 존재 할 경우)
 				if(this.danger_cluster_list.length != 0){
-					for(j in this.danger_cluster_list){
+					for(k in this.danger_cluster_list){
 						var style = {
 							font: '12px Courier',
 							fill: '#ff0000'
 						};
-						var sprite = this.danger_cluster_list[j].first.sprite;
-						var danger_text = game.add.text(0,0, this.danger_cluster_list[j].first.name + ' is Dangerous!!!', style);
+						var sprite = this.danger_cluster_list[k].first.sprite;
+						var danger_text = game.add.text(0,0, this.danger_cluster_list[k].first.name + ' is Dangerous!!!', style);
 						danger_text.alignTo(sprite, Phaser.LEFT_BOTTOM, 5);
 
 						var graphics = game.add.graphics(0, 0);
@@ -299,7 +268,6 @@
 
 		<div id="setting_holder">
 			<button onclick="addVehicle()">ADD</button>
-
 			<form id="config" onSubmit="changeConfig(); return false;">
 				<input name="veh_name" type="text" />
 				<input name="pos_x" type="number" />
@@ -309,10 +277,11 @@
 				<input type="submit" val="Change" />
 			</form>
 		</div>
-		
+		<!--
 		<div>
 			<button onclick="detection1()">Detecting1</button>
 		</div>
+		-->
 	</body>
 	<script>
 		/*Making More Real Situation.*/
@@ -323,6 +292,7 @@
 		var sprites;
 		var vehicle_num = 0;
 		var selected_vehicle = {};
+		var form_center = $('form#interset');
 		var form = 	$('form#config');
 		
 		var game = new Phaser.Game(screen_width, screen_height, Phaser.Auto, 'viewport', {
