@@ -44,6 +44,14 @@ ClusteringNode.prototype = {
 	},
 	
 	getVehicleList: function() {
+		for(i in this._vehicle_list){
+			this._vehicle_list[i].is_driving_caution_victim = false;
+			this._vehicle_list[i].is_driving_danger_victim = false;
+			this._vehicle_list[i].is_intersection_danger_victim = false;
+			this._vehicle_list[i].is_driving_caution_killer = false;
+			this._vehicle_list[i].is_driving_danger_killer = false;
+			this._vehicle_list[i].is_intersection_danger_killer = false;
+		}
 		return this._vehicle_list;
 	},
 
