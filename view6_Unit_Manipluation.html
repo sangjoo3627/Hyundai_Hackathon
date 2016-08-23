@@ -7,6 +7,7 @@
 		
 		<script type="text/javascript" src="resource/js/clusteringNode.js"></script>
 		<script type="text/javascript" src="resource/js/drivingDangerDetectNode.js"></script>
+		<script type="text/javascript" src="resource/js/intersectionDangerDetectNode.js"></script>
 		
 		<script type="text/javascript" src="resource/js/util.js"></script>
 	</head>
@@ -15,6 +16,7 @@
 		<div id="viewport"></div>
 		<div id="setting_holder">
 			<button onclick="addVehicle()">ADD</button>
+			<button onclick="addCenter()">CENTER</button>
 			<button onclick="deleteVehicle()">DELETE</button>
 			<button onclick="startInterval()">START</button>
 			<button onclick="endInterval()">END</button>
@@ -41,9 +43,16 @@
 		var vehicle_list = [];
 		var cluster_list = [];
 		
+		var center = null;
+		var signal = [3, 0, 0, 0];
+		
 		var selected_vehicle = {};
 		var detect_arc;
 		var cluster_area;
+		var intersection_area;
+		var driving_caution_point;
+		var driving_danger_point;
+		var intersection_danger_point;
 		var form = 	$('form#config');
 		
 		
@@ -58,6 +67,7 @@
 			var assetFolderDir = 'resource/assets/';
 			game.load.image('star', assetFolderDir + 'star.png');
 			game.load.image('car', assetFolderDir + 'car90.png');
+			game.load.image('dot', assetFolderDir + 'dot.png');
 		}
 
 		function create() {
@@ -68,6 +78,11 @@
 			
 			detect_arc = game.add.graphics(0, 0);
 			cluster_area = game.add.graphics(0, 0);
+			intersection_area = game.add.graphics(0, 0);
+			
+			driving_caution_point = game.add.graphics(0, 0);
+			driving_danger_point = game.add.graphics(0, 0);
+			intersection_danger_point = game.add.graphics(0, 0);
 		}
 
 		function update() {
@@ -86,12 +101,30 @@
 		 */
 		var clusteringNode = new ClusteringNode();;
 		var drivingDangerDetectNode = new DrivingDangerDetectNode();
+		var intersectionDangerDetectNode = new IntersectionDangerDetectNode({
+			signal: signal,
+			angle: [Math.PI, -(Math.PI / 2), 0, Math.PI / 2]
+		});
 		
 		drivingDangerDetectNode.transfer = function(victim_cluster, killer_cluster, degree) {
+			console.log(victim_cluster);
 			window.dispatchEvent(new CustomEvent('driving_'+degree, {
-				victim_cluster: victim_cluster, killer_cluster: killer_cluster
+				detail:{
+					victim_cluster: victim_cluster,
+					killer_cluster: killer_cluster
+				}
 			}));
-		}
+		};
+		intersectionDangerDetectNode.transfer = function(victim_cluster, killer_cluster, degree) {
+			console.log(victim_cluster);
+			window.dispatchEvent(new CustomEvent('intersection_'+degree, {
+				detail:{
+					victim_cluster: victim_cluster,
+					killer_cluster: killer_cluster
+				}
+			}));
+		};
+		
 		
 		var interval = null;
 		
@@ -107,6 +140,12 @@
 					console.log('drivingDangerDetectNode');
 					drivingDangerDetectNode.setClusterList(cluster_list);
 					drivingDangerDetectNode.detect();
+					
+					console.log('intersectionDangerDetectNode');
+					intersectionDangerDetectNode.init();
+					intersectionDangerDetectNode.setClusterList(cluster_list);
+					intersectionDangerDetectNode.setSignal(signal);
+					intersectionDangerDetectNode.detect();
 				}, 3000);
 			}
 		}
@@ -118,12 +157,38 @@
 	
 	<script>
 		window.addEventListener('driving_caution', function(e){
-			console.log('driving_caution');
-		});
+			setVehicleCond(e.detail.victim_cluster, e.detail.killer_cluster, 'driving_caution');
+ 		});
 		
 		window.addEventListener('driving_danger', function(e){
-			console.log('driving_danger');
+			setVehicleCond(e.detail.victim_cluster, e.detail.killer_cluster, 'driving_danger');
 		});
+		
+		window.addEventListener('intersection_danger', function(e) {
+			setVehicleCond(e.detail.victim_cluster, e.detail.killer_cluster, 'intersection_danger');
+		});
+		
+		function setVehicleCond(victim_cluster, killer_cluster, event_name) {
+			if(event_name == 'driving_caution') {
+				property_name_victim = 'is_driving_caution_victim';
+				property_name_killer = 'is_driving_caution_killer';
+			} else if (event_name == 'driving_danger') {
+				property_name_victim = 'is_driving_danger_victim';
+				property_name_killer = 'is_driving_danger_killer';
+			} else if (event_name == 'intersection_danger') {
+				property_name_victim = 'is_intersection_danger_victim';
+				property_name_killer = 'is_intersection_danger_killer';
+			}
+			
+			for(i in victim_cluster.vehicle_list) {
+				victim_cluster.vehicle_list[i][property_name_victim] = true;
+			}
+			
+			for(i in killer_cluster.vehicle_list) {
+				killer_cluster.vehicle_list[i][property_name_killer] = true;
+			}
+		}
+		
 	</script>
 	
 	<script>
@@ -233,6 +298,29 @@
 				cluster_area.endFill();				
 			}
 		}
+		
+		function updateDrivingCautionPoint() {
+			
+		}
+		
+		function updateDrivingDangerPoint() {
+			driving_danger_point.clear();
+			
+			driving_danger_point.lineStyle(1, 0xffffff);
+			driving_danger_point.beginFill(0x0000FF, 0.8);
+			for(i in vehicle_list) {
+				if(vehicle_list[i].is_driving_danger_victim) {
+					var sprite = vehicle_list[i].sprite;
+					driving_danger_point.drawCircle(0, 0, 5);
+					driving_danger_
+					
+				}
+			}
+		}
+		
+		function updateIntersectionDangerPoint() {
+		
+		}
 	</script>
 
 	<script>
@@ -298,9 +386,41 @@
 			added.vel = 0;
 			added.name = added_sprite.name;
 			added.cluster = -1;
+			
+			added.is_driving_caution_victim = false;
+			added.is_driving_danger_victim = false;
+			added.is_intersection_danger_victim = false;
+			added.is_driving_caution_killer = false;
+			added.is_driving_danger_killer = false;
+			added.is_intersection_danger_killer = false;
 
 			vehicle_list.push(added);
 		}
+	</script>
+	
+	<script>
+		/*
+		 *	Add Center
+		 */ 
+		 function addCenter() {
+			if(center == null) {
+				center = game.add.sprite(game.world.centerX, game.world.centerY, 'dot');
+				
+				stop_line = 50;
+				
+				intersection_area.clear();
+				intersection_area.lineStyle(1, 0xeaeaea);
+				intersection_area.beginFill(8, 0.2);
+				intersection_area.drawCircle(center.x, center.y, 400);
+				intersection_area.drawRect(center.x - stop_line, center.y - stop_line, stop_line * 2, stop_line * 2);
+				intersection_area.drawRect(center.x - screen_width / 2, center.y - stop_line, screen_width, stop_line * 2);
+				intersection_area.drawRect(center.x - stop_line, center.y - screen_height / 2, stop_line * 2, screen_height);
+				intersection_area.endFill();
+				
+				intersectionDangerDetectNode.setCenter(center);
+			}
+		}
+	
 	</script>
 	
 	<script>
@@ -350,4 +470,5 @@
 			selected_vehicle.vel = vel;
 		}
 	</script>
+	
 </html>
