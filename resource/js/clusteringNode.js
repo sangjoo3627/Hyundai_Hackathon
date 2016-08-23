@@ -141,7 +141,11 @@ ClusteringNode.prototype = {
 	},
 
 	_getDetectDst: function(vel) {
-		return (10 - vel / 6) * this._dist_scale;
+		if(vel >= 60) {
+			return 0;
+		} else {
+			return (10 - vel / 6) * this._dist_scale;
+		}
 	},
 
 	_isInLine: function(src_rot, trgt_rot, bet_rot, src_vel) {
