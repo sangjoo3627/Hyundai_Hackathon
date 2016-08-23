@@ -92,6 +92,7 @@
 		function render() {
 			updateDetectArc();
 			updateClusterArea();
+			printText();
 		}
 	</script>
 	
@@ -146,12 +147,29 @@
 					intersectionDangerDetectNode.setClusterList(cluster_list);
 					intersectionDangerDetectNode.setSignal(signal);
 					intersectionDangerDetectNode.detect();
+					
+
 				}, 3000);
 			}
 		}
 		
 		function endInterval() {
 			clearInterval(interval);
+		}
+		
+		function printText() {
+			var name_style = {
+				font: '12px Courier',
+				fill: '#ffffff'
+			}
+			for(i in vehicle_list) {
+				var vehicle = vehicle_list[i];
+			
+				vehicle.name_text.text = vehicle.name;
+				vehicle.name_text.alignTo(vehicle.sprite, Phaser.RIGHT_TOP, 5);
+				vehicle.cluster_text.text = 'C: '+ vehicle.cluster;
+				vehicle.cluster_text.alignTo(vehicle.sprite, Phaser.LEFT_TOP, 5);
+			}
 		}
 	</script>
 	
@@ -304,18 +322,7 @@
 		}
 		
 		function updateDrivingDangerPoint() {
-			driving_danger_point.clear();
 			
-			driving_danger_point.lineStyle(1, 0xffffff);
-			driving_danger_point.beginFill(0x0000FF, 0.8);
-			for(i in vehicle_list) {
-				if(vehicle_list[i].is_driving_danger_victim) {
-					var sprite = vehicle_list[i].sprite;
-					driving_danger_point.drawCircle(0, 0, 5);
-					driving_danger_
-					
-				}
-			}
 		}
 		
 		function updateIntersectionDangerPoint() {
@@ -393,6 +400,16 @@
 			added.is_driving_caution_killer = false;
 			added.is_driving_danger_killer = false;
 			added.is_intersection_danger_killer = false;
+			
+			added.name_text = game.add.text(0, 0, '',{
+				font: '12px Courier',
+				fill: '#000000'
+			});
+			
+			added.cluster_text = game.add.text(0, 0, '', {
+				font: '12px Courier',
+				fill: '#000000'
+			});
 
 			vehicle_list.push(added);
 		}
